@@ -14,7 +14,7 @@ class CocinaEscolarApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const seed = Color(0xFF1B5E20); // Verde institucional profundo
+    const seed = Color(0xFFB71C1C); // Rojo institucional profundo
     return MaterialApp(
       title: 'Cocina Escolar',
       debugShowCheckedModeBanner: false,
@@ -22,6 +22,7 @@ class CocinaEscolarApp extends StatelessWidget {
         useMaterial3: true,
         colorScheme: ColorScheme.fromSeed(seedColor: seed),
         textTheme: GoogleFonts.poppinsTextTheme(),
+        scaffoldBackgroundColor: const Color(0xFFF5F5F5), // Fondo gris claro
         inputDecorationTheme: const InputDecorationTheme(
           filled: true,
           fillColor: Colors.white,
@@ -56,6 +57,7 @@ class _MainNavigatorPageState extends State<MainNavigatorPage> {
   final List<Widget> _pages = [
     const HomePage(),
     const RegistrarPage(),
+    const PendientesPage(), // Actualizado con la Guía 4
     const InformesPage(),
     const ConfiguracionPage(),
   ];
@@ -66,7 +68,7 @@ class _MainNavigatorPageState extends State<MainNavigatorPage> {
       body: _pages[_currentIndex],
       bottomNavigationBar: Container(
         decoration: const BoxDecoration(
-          color: Color(0xFF0A2E12),
+          color: Color(0xFF212121), // Gris oscuro / casi negro
           boxShadow: [
             BoxShadow(color: Colors.black26, blurRadius: 10, offset: Offset(0, -3))
           ],
@@ -77,10 +79,10 @@ class _MainNavigatorPageState extends State<MainNavigatorPage> {
           backgroundColor: Colors.transparent,
           elevation: 0,
           type: BottomNavigationBarType.fixed,
-          selectedItemColor: Colors.white,
-          unselectedItemColor: Colors.white60,
-          selectedLabelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
-          unselectedLabelStyle: const TextStyle(fontSize: 12),
+          selectedItemColor: const Color(0xFFEF5350), // Rojo claro seleccionado
+          unselectedItemColor: Colors.grey,
+          selectedLabelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 11),
+          unselectedLabelStyle: const TextStyle(fontSize: 11),
           items: const [
             BottomNavigationBarItem(
               icon: Icon(Icons.home_rounded),
@@ -89,6 +91,10 @@ class _MainNavigatorPageState extends State<MainNavigatorPage> {
             BottomNavigationBarItem(
               icon: Icon(Icons.qr_code_scanner_rounded),
               label: 'Registrar',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.warning_amber_rounded),
+              label: 'Pendientes',
             ),
             BottomNavigationBarItem(
               icon: Icon(Icons.bar_chart_rounded),
@@ -115,7 +121,6 @@ class HomePage extends StatelessWidget {
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     return Scaffold(
-      backgroundColor: const Color(0xFFF4F7F5),
       appBar: AppBar(
         backgroundColor: cs.primary,
         foregroundColor: Colors.white,
@@ -128,13 +133,12 @@ class HomePage extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Banner de Bienvenida
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(22),
               decoration: BoxDecoration(
                 gradient: LinearGradient(
-                  colors: [cs.primary, const Color(0xFF2E7D32)],
+                  colors: [cs.primary, const Color(0xFFD32F2F)],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
@@ -179,7 +183,7 @@ class HomePage extends StatelessWidget {
                   child: _AccesoCard(
                     icon: Icons.qr_code_scanner,
                     titulo: 'Escanear Retiro',
-                    color: Colors.teal.shade800,
+                    color: const Color(0xFFC62828),
                     onTap: () {
                       Navigator.push(context, MaterialPageRoute(builder: (_) => const RegistrarPage()));
                     },
@@ -188,11 +192,11 @@ class HomePage extends StatelessWidget {
                 const SizedBox(width: 15),
                 Expanded(
                   child: _AccesoCard(
-                    icon: Icons.person_add_alt_1,
-                    titulo: 'Nuevo Alumno',
-                    color: Colors.indigo.shade800,
+                    icon: Icons.warning_amber_rounded,
+                    titulo: 'Ver Pendientes',
+                    color: Colors.grey.shade800,
                     onTap: () {
-                      Navigator.push(context, MaterialPageRoute(builder: (_) => const RegistrarEstudiantePage()));
+                      Navigator.push(context, MaterialPageRoute(builder: (_) => const PendientesPage()));
                     },
                   ),
                 ),
@@ -224,7 +228,7 @@ class _AccesoCard extends StatelessWidget {
           color: Colors.white,
           borderRadius: BorderRadius.circular(18),
           boxShadow: [const BoxShadow(color: Colors.black12, blurRadius: 5, offset: Offset(0, 2))],
-          border: Border.all(color: Colors.grey.shade200),
+          border: Border.all(color: Colors.grey.shade300),
         ),
         child: Column(
           children: [
@@ -264,7 +268,7 @@ class _RegistrarPageState extends State<RegistrarPage> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(texto),
-        backgroundColor: error ? Colors.red.shade700 : Colors.green.shade700,
+        backgroundColor: error ? Colors.red.shade800 : Colors.grey.shade800,
         behavior: SnackBarBehavior.floating,
       ),
     );
@@ -331,10 +335,10 @@ class _RegistrarPageState extends State<RegistrarPage> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Cancelar'),
+            child: const Text('Cancelar', style: TextStyle(color: Colors.grey)),
           ),
           ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.green.shade800, foregroundColor: Colors.white),
+            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFB71C1C), foregroundColor: Colors.white),
             onPressed: () {
               Navigator.pop(context);
               Navigator.push(
@@ -353,7 +357,6 @@ class _RegistrarPageState extends State<RegistrarPage> {
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     return Scaffold(
-      backgroundColor: const Color(0xFFF4F7F5),
       appBar: AppBar(
         backgroundColor: cs.primary,
         foregroundColor: Colors.white,
@@ -364,6 +367,7 @@ class _RegistrarPageState extends State<RegistrarPage> {
         padding: const EdgeInsets.all(20),
         child: Card(
           elevation: 2,
+          color: Colors.white,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
           child: Padding(
             padding: const EdgeInsets.all(20),
@@ -430,7 +434,162 @@ class _RegistrarPageState extends State<RegistrarPage> {
 }
 
 // ==========================================
-// 3. PÁGINA PARA REGISTRAR NUEVO ESTUDIANTE
+// 3. PÁGINA DE UTENSILIOS PENDIENTES (Guía 4)
+// ==========================================
+class PendientesPage extends StatefulWidget {
+  const PendientesPage({super.key});
+
+  @override
+  State<PendientesPage> createState() => _PendientesPageState();
+}
+
+class _PendientesPageState extends State<PendientesPage> {
+  String carnetEscaneado = "";
+  List<dynamic> pendientes = [];
+  bool _cargando = false;
+
+  void _escanearCarnet() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => EscaneoPage(
+          onCodigoEscaneado: (codigo) {
+            setState(() {
+              carnetEscaneado = codigo;
+            });
+            obtenerPendientes();
+          },
+        ),
+      ),
+    );
+  }
+
+  Future<void> obtenerPendientes() async {
+    if (carnetEscaneado.trim().isEmpty) return;
+    setState(() => _cargando = true);
+    try {
+      final url = Uri.parse('$kBaseUrl/pendientes/$carnetEscaneado');
+      final response = await http.get(url);
+      
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        setState(() {
+          pendientes = data is List ? data : (data['pendientes'] ?? []);
+        });
+      } else {
+        setState(() {
+          pendientes = [];
+        });
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Error al obtener pendientes'), backgroundColor: Colors.red),
+        );
+      }
+    } catch (_) {
+      setState(() => pendientes = []);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No se pudo conectar con el servidor'), backgroundColor: Colors.red),
+      );
+    } finally {
+      if (mounted) setState(() => _cargando = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return Scaffold(
+      appBar: AppBar(
+        backgroundColor: cs.primary,
+        foregroundColor: Colors.white,
+        title: const Text('Utensilios Pendientes', style: TextStyle(fontWeight: FontWeight.bold)),
+        centerTitle: true,
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          children: [
+            SizedBox(
+              width: double.infinity,
+              height: 50,
+              child: ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: cs.primary,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                ),
+                onPressed: _escanearCarnet,
+                icon: const Icon(Icons.qr_code_scanner),
+                label: const Text('Escanear Carnet', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+              ),
+            ),
+            const SizedBox(height: 20),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.grey.shade300),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.badge, color: Colors.grey),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      carnetEscaneado.isEmpty ? 'Ningún carnet escaneado' : 'Carnet: $carnetEscaneado',
+                      style: TextStyle(fontWeight: FontWeight.w600, color: carnetEscaneado.isEmpty ? Colors.grey : Colors.black87),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 20),
+            Row(
+              children: const [
+                Text('Lista de no devueltos', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.black87)),
+              ],
+            ),
+            const SizedBox(height: 10),
+            Expanded(
+              child: _cargando
+                  ? const Center(child: CircularProgressIndicator())
+                  : pendientes.isEmpty
+                      ? const Center(
+                          child: Text('No hay utensilios pendientes para este estudiante',
+                              textAlign: TextAlign.center, style: TextStyle(color: Colors.grey)))
+                      : ListView.builder(
+                          itemCount: pendientes.length,
+                          itemBuilder: (context, index) {
+                            final item = pendientes[index];
+                            return Card(
+                              color: Colors.white,
+                              margin: const EdgeInsets.only(bottom: 12),
+                              elevation: 1,
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                              child: ListTile(
+                                contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                                leading: const CircleAvatar(
+                                  backgroundColor: Color(0xFFFFEBEE),
+                                  child: Icon(Icons.warning, color: Color(0xFFC62828)),
+                                ),
+                                title: Text("Utensilio: ${item['tipo']}", style: const TextStyle(fontWeight: FontWeight.bold)),
+                                subtitle: Text("Retirado: ${item['fecha_retiro']}"),
+                              ),
+                            );
+                          },
+                        ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ==========================================
+// 4. PÁGINA PARA REGISTRAR NUEVO ESTUDIANTE
 // ==========================================
 class RegistrarEstudiantePage extends StatefulWidget {
   final String codigoInicial;
@@ -456,7 +615,7 @@ class _RegistrarEstudiantePageState extends State<RegistrarEstudiantePage> {
 
   void _msg(String texto, {bool error = false}) {
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(texto), backgroundColor: error ? Colors.red.shade700 : Colors.green.shade700),
+      SnackBar(content: Text(texto), backgroundColor: error ? Colors.red.shade800 : Colors.grey.shade800),
     );
   }
 
@@ -496,7 +655,6 @@ class _RegistrarEstudiantePageState extends State<RegistrarEstudiantePage> {
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     return Scaffold(
-      backgroundColor: const Color(0xFFF4F7F5),
       appBar: AppBar(
         backgroundColor: cs.primary,
         foregroundColor: Colors.white,
@@ -507,6 +665,7 @@ class _RegistrarEstudiantePageState extends State<RegistrarEstudiantePage> {
         padding: const EdgeInsets.all(20),
         child: Card(
           elevation: 2,
+          color: Colors.white,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
           child: Padding(
             padding: const EdgeInsets.all(20),
@@ -558,7 +717,7 @@ class _RegistrarEstudiantePageState extends State<RegistrarEstudiantePage> {
 }
 
 // ==========================================
-// 4. PÁGINA DE INFORMES DIARIOS
+// 5. PÁGINA DE INFORMES DIARIOS
 // ==========================================
 class InformesPage extends StatefulWidget {
   const InformesPage({super.key});
@@ -604,7 +763,6 @@ class _InformesPageState extends State<InformesPage> {
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     return Scaffold(
-      backgroundColor: const Color(0xFFF4F7F5),
       appBar: AppBar(
         backgroundColor: cs.primary,
         foregroundColor: Colors.white,
@@ -640,6 +798,7 @@ class _InformesPageState extends State<InformesPage> {
                             final item = _informe[index];
                             final tipo = item['tipo'] ?? 'Utensilio';
                             return Card(
+                              color: Colors.white,
                               margin: const EdgeInsets.only(bottom: 12),
                               elevation: 1,
                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -655,7 +814,7 @@ class _InformesPageState extends State<InformesPage> {
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   crossAxisAlignment: CrossAxisAlignment.end,
                                   children: [
-                                    Text('Pend.: ${item['pendientes'] ?? 0}', style: const TextStyle(color: Colors.orange, fontWeight: FontWeight.bold)),
+                                    Text('Pend.: ${item['pendientes'] ?? 0}', style: const TextStyle(color: Color(0xFFC62828), fontWeight: FontWeight.bold)),
                                   ],
                                 ),
                               ),
@@ -671,7 +830,7 @@ class _InformesPageState extends State<InformesPage> {
 }
 
 // ==========================================
-// 5. CONFIGURACIÓN
+// 6. CONFIGURACIÓN
 // ==========================================
 class ConfiguracionPage extends StatelessWidget {
   const ConfiguracionPage({super.key});
@@ -680,7 +839,6 @@ class ConfiguracionPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     return Scaffold(
-      backgroundColor: const Color(0xFFF4F7F5),
       appBar: AppBar(
         backgroundColor: cs.primary,
         foregroundColor: Colors.white,
@@ -693,29 +851,31 @@ class ConfiguracionPage extends StatelessWidget {
           const Text('Conexión con el Servidor', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey)),
           const SizedBox(height: 10),
           Card(
+            color: Colors.white,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-            child: ListTile(
-              leading: const Icon(Icons.dns_rounded),
-              title: const Text('URL Base del Backend'),
-              subtitle: const Text(kBaseUrl),
-              trailing: const Icon(Icons.check_circle, color: Colors.green),
+            child: const ListTile(
+              leading: Icon(Icons.dns_rounded, color: Color(0xFFB71C1C)),
+              title: Text('URL Base del Backend'),
+              subtitle: Text(kBaseUrl),
+              trailing: Icon(Icons.check_circle, color: Colors.green),
             ),
           ),
           const SizedBox(height: 20),
           const Text('Información del Sistema', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey)),
           const SizedBox(height: 10),
           Card(
+            color: Colors.white,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
             child: const Column(
               children: [
                 ListTile(
-                  leading: Icon(Icons.school),
+                  leading: Icon(Icons.school, color: Color(0xFFB71C1C)),
                   title: Text('Institución'),
                   subtitle: Text('INFRAMEN · Desarrollo de Software'),
                 ),
                 Divider(height: 1),
                 ListTile(
-                  leading: Icon(Icons.info_outline),
+                  leading: Icon(Icons.info_outline, color: Color(0xFFB71C1C)),
                   title: Text('Versión de la App'),
                   subtitle: Text('1.0.0+1'),
                 ),
@@ -729,7 +889,7 @@ class ConfiguracionPage extends StatelessWidget {
 }
 
 // ==========================================
-// PANTALLA DE ESCANEO DE CÁMARA MEJORADA
+// PANTALLA DE ESCANEO DE CÁMARA (Con Animación y Marcos Rojos)
 // ==========================================
 class EscaneoPage extends StatefulWidget {
   final ValueChanged<String> onCodigoEscaneado;
@@ -749,9 +909,8 @@ class _EscaneoPageState extends State<EscaneoPage> {
       final code = barcodes.first.rawValue;
       if (code != null) {
         _scanned = true;
-        setState(() {}); // Actualiza para mostrar la animación de éxito visual
+        setState(() {});
 
-        // Espera un breve instante (500ms) para que el usuario aprecie el éxito antes de cerrar
         Future.delayed(const Duration(milliseconds: 500), () {
           if (mounted) {
             widget.onCodigoEscaneado(code);
@@ -768,7 +927,7 @@ class _EscaneoPageState extends State<EscaneoPage> {
       backgroundColor: Colors.black,
       appBar: AppBar(
         title: const Text('ESCANEAR CÓDIGO', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-        backgroundColor: const Color(0xFF0A2E12),
+        backgroundColor: const Color(0xFF212121),
         foregroundColor: Colors.white,
         centerTitle: true,
       ),
@@ -792,7 +951,6 @@ class _EscaneoPageState extends State<EscaneoPage> {
               ),
             ),
           ),
-          // Indicador visual / Feedback cuando se detecta el código exitosamente
           if (_scanned)
             Container(
               color: Colors.black54,
@@ -800,11 +958,11 @@ class _EscaneoPageState extends State<EscaneoPage> {
                 child: Container(
                   padding: const EdgeInsets.all(24),
                   decoration: BoxDecoration(
-                    color: Colors.green.shade800,
+                    color: const Color(0xFFC62828),
                     shape: BoxShape.circle,
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.greenAccent.withOpacity(0.6),
+                        color: Colors.redAccent.withOpacity(0.6),
                         blurRadius: 20,
                         spreadRadius: 5,
                       )
@@ -831,8 +989,8 @@ class _EscaneoPageState extends State<EscaneoPage> {
         height: 35,
         decoration: const BoxDecoration(
           border: Border(
-            top: BorderSide(color: Color(0xFF4CAF50), width: 4), // Verde institucional coincidente
-            left: BorderSide(color: Color(0xFF4CAF50), width: 4),
+            top: BorderSide(color: Color(0xFFEF5350), width: 4), // Rojo brillante institucional
+            left: BorderSide(color: Color(0xFFEF5350), width: 4),
           ),
         ),
       ),
