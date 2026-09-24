@@ -42,7 +42,7 @@ class CocinaEscolarApp extends StatelessWidget {
 }
 
 // ==========================================
-// PÁGINA PRINCIPAL CON NAVEGACIÓN INFERIOR
+// PÁGINA PRINCIPAL CON NAVEGACIÓN INFERIOR (4 PESTAÑAS)
 // ==========================================
 class MainNavigatorPage extends StatefulWidget {
   const MainNavigatorPage({super.key});
@@ -57,7 +57,6 @@ class _MainNavigatorPageState extends State<MainNavigatorPage> {
   final List<Widget> _pages = [
     const HomePage(),
     const RegistrarPage(),
-    const PendientesPage(), // Actualizado con la Guía 4
     const InformesPage(),
     const ConfiguracionPage(),
   ];
@@ -93,10 +92,6 @@ class _MainNavigatorPageState extends State<MainNavigatorPage> {
               label: 'Registrar',
             ),
             BottomNavigationBarItem(
-              icon: Icon(Icons.warning_amber_rounded),
-              label: 'Pendientes',
-            ),
-            BottomNavigationBarItem(
               icon: Icon(Icons.bar_chart_rounded),
               label: 'Informes',
             ),
@@ -112,7 +107,7 @@ class _MainNavigatorPageState extends State<MainNavigatorPage> {
 }
 
 // ==========================================
-// 1. PÁGINA DE INICIO (Resumen y Accesos)
+// 1. PÁGINA DE INICIO (Con Menú Lateral / Drawer)
 // ==========================================
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
@@ -127,6 +122,53 @@ class HomePage extends StatelessWidget {
         title: const Text('Cocina Escolar', style: TextStyle(fontWeight: FontWeight.bold)),
         centerTitle: true,
         elevation: 0,
+        leading: Builder(
+          builder: (context) => IconButton(
+            icon: const Icon(Icons.menu_rounded),
+            onPressed: () => Scaffold.of(context).openDrawer(),
+          ),
+        ),
+      ),
+      drawer: Drawer(
+        child: ListView(
+          padding: EdgeInsets.zero,
+          children: [
+            DrawerHeader(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [cs.primary, const Color(0xFFD32F2F)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+              ),
+              child: const Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  Icon(Icons.restaurant_menu, size: 40, color: Colors.white),
+                  SizedBox(height: 10),
+                  Text('Menú de Gestión',
+                      style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+                  Text('INFRAMEN · Control de Vajilla',
+                      style: TextStyle(color: Colors.white70, fontSize: 12)),
+                ],
+              ),
+            ),
+            ListTile(
+              leading: const Icon(Icons.assignment_return_rounded, color: Color(0xFFB71C1C)),
+              title: const Text('Devolución de Utensilios', style: TextStyle(fontWeight: FontWeight.bold)),
+              subtitle: const Text('Ver pendientes y registrar devoluciones'),
+              onTap: () {
+                Navigator.pop(context); // Cierra el Drawer
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const PendientesPage()),
+                );
+              },
+            ),
+            const Divider(),
+          ],
+        ),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
@@ -434,7 +476,7 @@ class _RegistrarPageState extends State<RegistrarPage> {
 }
 
 // ==========================================
-// 3. PÁGINA DE UTENSILIOS PENDIENTES (Guía 4)
+// 3. PÁGINA DE UTENSILIOS PENDIENTES Y DEVOLUCIÓN (Actualizada con TextField persistente)
 // ==========================================
 class PendientesPage extends StatefulWidget {
   const PendientesPage({super.key});
@@ -444,9 +486,16 @@ class PendientesPage extends StatefulWidget {
 }
 
 class _PendientesPageState extends State<PendientesPage> {
-  String carnetEscaneado = "";
+  // Se usa un TextEditingController para mantener y mostrar de forma segura el carnet escaneado/ingresado
+  final _carnetCtrl = TextEditingController();
   List<dynamic> pendientes = [];
   bool _cargando = false;
+
+  final _iconoTipo = const {
+    'Plato': Icons.dinner_dining,
+    'Vaso': Icons.local_drink,
+    'Taza': Icons.coffee,
+  };
 
   void _escanearCarnet() {
     Navigator.push(
@@ -455,7 +504,7 @@ class _PendientesPageState extends State<PendientesPage> {
         builder: (context) => EscaneoPage(
           onCodigoEscaneado: (codigo) {
             setState(() {
-              carnetEscaneado = codigo;
+              _carnetCtrl.text = codigo; // Mantiene el carnet en el campo de texto sin borrarlo
             });
             obtenerPendientes();
           },
@@ -465,10 +514,12 @@ class _PendientesPageState extends State<PendientesPage> {
   }
 
   Future<void> obtenerPendientes() async {
-    if (carnetEscaneado.trim().isEmpty) return;
+    final carnet = _carnetCtrl.text.trim();
+    if (carnet.isEmpty) return;
+    
     setState(() => _cargando = true);
     try {
-      final url = Uri.parse('$kBaseUrl/pendientes/$carnetEscaneado');
+      final url = Uri.parse('$kBaseUrl/pendientes/$carnet');
       final response = await http.get(url);
       
       if (response.statusCode == 200) {
@@ -496,6 +547,30 @@ class _PendientesPageState extends State<PendientesPage> {
     }
   }
 
+  Future<void> _registrarDevolucion(int movimientoId, String tipo) async {
+    try {
+      final url = Uri.parse('$kBaseUrl/devolucion/$movimientoId');
+      final response = await http.put(url);
+      if (response.statusCode == 200) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('¡Devolución de $tipo registrada con éxito!'), backgroundColor: Colors.green.shade800),
+        );
+        obtenerPendientes(); // Recarga la lista de pendientes
+      } else {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('No se pudo registrar la devolución'), backgroundColor: Colors.red),
+        );
+      }
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Error de conexión con el servidor'), backgroundColor: Colors.red),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
@@ -503,83 +578,95 @@ class _PendientesPageState extends State<PendientesPage> {
       appBar: AppBar(
         backgroundColor: cs.primary,
         foregroundColor: Colors.white,
-        title: const Text('Utensilios Pendientes', style: TextStyle(fontWeight: FontWeight.bold)),
+        title: const Text('Devolución de Utensilios', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
         centerTitle: true,
       ),
       body: Padding(
         padding: const EdgeInsets.all(20),
         child: Column(
           children: [
+            // Campo de texto interactivo para el carnet (mantiene el valor y evita que se borre)
+            TextField(
+              controller: _carnetCtrl,
+              decoration: InputDecoration(
+                labelText: 'Carnet del Alumno',
+                prefixIcon: const Icon(Icons.badge_outlined),
+                suffixIcon: IconButton(
+                  icon: Icon(Icons.camera_alt, color: cs.primary),
+                  onPressed: _escanearCarnet,
+                  tooltip: 'Escanear Carnet',
+                ),
+              ),
+              onSubmitted: (_) => obtenerPendientes(),
+            ),
+            const SizedBox(height: 12),
             SizedBox(
               width: double.infinity,
-              height: 50,
+              height: 48,
               child: ElevatedButton.icon(
                 style: ElevatedButton.styleFrom(
                   backgroundColor: cs.primary,
                   foregroundColor: Colors.white,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                 ),
-                onPressed: _escanearCarnet,
-                icon: const Icon(Icons.qr_code_scanner),
-                label: const Text('Escanear Carnet', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                onPressed: obtenerPendientes,
+                icon: const Icon(Icons.search_rounded),
+                label: const Text('Buscar Pendientes', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
               ),
             ),
             const SizedBox(height: 20),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.grey.shade300),
-              ),
-              child: Row(
-                children: [
-                  const Icon(Icons.badge, color: Colors.grey),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      carnetEscaneado.isEmpty ? 'Ningún carnet escaneado' : 'Carnet: $carnetEscaneado',
-                      style: TextStyle(fontWeight: FontWeight.w600, color: carnetEscaneado.isEmpty ? Colors.grey : Colors.black87),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 20),
-            Row(
-              children: const [
-                Text('Lista de no devueltos', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.black87)),
-              ],
+            const Align(
+              alignment: Alignment.centerLeft,
+              child: Text('Utensilios pendientes:', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Colors.black87)),
             ),
             const SizedBox(height: 10),
             Expanded(
               child: _cargando
                   ? const Center(child: CircularProgressIndicator())
-                  : pendientes.isEmpty
+                  : _carnetCtrl.text.trim().isEmpty
                       ? const Center(
-                          child: Text('No hay utensilios pendientes para este estudiante',
+                          child: Text('Escanea o ingresa un carnet para ver los utensilios pendientes',
                               textAlign: TextAlign.center, style: TextStyle(color: Colors.grey)))
-                      : ListView.builder(
-                          itemCount: pendientes.length,
-                          itemBuilder: (context, index) {
-                            final item = pendientes[index];
-                            return Card(
-                              color: Colors.white,
-                              margin: const EdgeInsets.only(bottom: 12),
-                              elevation: 1,
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                              child: ListTile(
-                                contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-                                leading: const CircleAvatar(
-                                  backgroundColor: Color(0xFFFFEBEE),
-                                  child: Icon(Icons.warning, color: Color(0xFFC62828)),
-                                ),
-                                title: Text("Utensilio: ${item['tipo']}", style: const TextStyle(fontWeight: FontWeight.bold)),
-                                subtitle: Text("Retirado: ${item['fecha_retiro']}"),
-                              ),
-                            );
-                          },
-                        ),
+                      : pendientes.isEmpty
+                          ? const Center(
+                              child: Text('Este estudiante no tiene utensilios pendientes',
+                                  textAlign: TextAlign.center, style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold)))
+                          : ListView.builder(
+                              itemCount: pendientes.length,
+                              itemBuilder: (context, index) {
+                                final item = pendientes[index];
+                                final tipo = item['tipo'] ?? 'Utensilio';
+                                final movimientoId = item['id'];
+                                final fechaRetiro = item['fecha_retiro'] ?? '';
+
+                                return Card(
+                                  color: Colors.white,
+                                  margin: const EdgeInsets.only(bottom: 12),
+                                  elevation: 1,
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                                  child: ListTile(
+                                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                    leading: CircleAvatar(
+                                      backgroundColor: const Color(0xFFFFEBEE),
+                                      child: Icon(_iconoTipo[tipo] ?? Icons.restaurant, color: const Color(0xFFC62828)),
+                                    ),
+                                    title: Text(tipo, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                                    subtitle: Text('Retirado: $fechaRetiro', style: const TextStyle(fontSize: 12)),
+                                    trailing: ElevatedButton.icon(
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: Colors.grey.shade900,
+                                        foregroundColor: Colors.white,
+                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                      ),
+                                      onPressed: () => _registrarDevolucion(movimientoId, tipo),
+                                      icon: const Icon(Icons.check, size: 16),
+                                      label: const Text('Devolver', style: TextStyle(fontSize: 12)),
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
             ),
           ],
         ),
