@@ -546,11 +546,23 @@ class _PendientesPageState extends State<PendientesPage> {
     }
   }
 
-  Future<void> _registrarDevolucion(int movimientoId, String tipo) async {
+  Future<void> _registrarDevolucion(dynamic movimientoId, String tipo) async {
+    if (movimientoId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Error: El ID del movimiento es nulo'), backgroundColor: Colors.red),
+      );
+      return;
+    }
+
     try {
       final url = Uri.parse('$kBaseUrl/devolucion/$movimientoId');
+      print('Enviando PUT a: $url');
+      
       final response = await http.put(url);
       
+      print('Código de respuesta: ${response.statusCode}');
+      print('Respuesta cuerpo: ${response.body}');
+
       if (response.statusCode == 200) {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
@@ -560,13 +572,14 @@ class _PendientesPageState extends State<PendientesPage> {
       } else {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('No se pudo registrar la devolución'), backgroundColor: Colors.red),
+          SnackBar(content: Text('Error del servidor (${response.statusCode}): No se pudo registrar'), backgroundColor: Colors.red),
         );
       }
-    } catch (_) {
+    } catch (e) {
+      print('Excepción en devolución: $e');
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Error de conexión con el servidor'), backgroundColor: Colors.red),
+        const SnackBar(content: Text('Error de conexión al intentar devolver'), backgroundColor: Colors.red),
       );
     }
   }
