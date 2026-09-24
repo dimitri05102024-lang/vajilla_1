@@ -14,10 +14,6 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
 
-    compilerOptions {
-        jvmTarget = "17"
-    }
-
     defaultConfig {
         applicationId = "com.example.vajilla_1"
         minSdk = flutter.minSdkVersion
