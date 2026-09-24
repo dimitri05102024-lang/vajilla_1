@@ -78,11 +78,11 @@ class _HomePageState extends State<HomePage> {
       MaterialPageRoute(
         builder: (context) => EscaneoPage(
           onCodigoEscaneado: (codigo) {
-            // Solo coloca el código en la caja de texto y detiene el escáner
+            // Solo coloca el código en la caja de texto y detiene el escáner (sin auto-enviar)
             setState(() {
               _carnetCtrl.text = codigo;
             });
-            _msg('Código escaneado con éxito. Presiona Registrar Retiro.');
+            _msg('Código escaneado. Presiona "Registrar Retiro".');
           },
         ),
       ),
