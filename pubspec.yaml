@@ -13,6 +13,7 @@ dependencies:
   google_fonts: ^6.2.1
   cupertino_icons: ^1.0.6
   mobile_scanner: ^3.5.0
+  fl_chart: ^0.69.0 # <--- Agregado para las gráficas estadísticas (Guía 7)[cite: 10]
 
 dev_dependencies:
   flutter_test:
