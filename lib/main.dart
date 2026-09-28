@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
 import 'package:mobile_scanner/mobile_scanner.dart';
+import 'package:fl_chart/fl_chart.dart'; // <--- Añadido para la Guía 7[cite: 10]
 
 // ⚠️ IP actualizada correctamente según tu ipconfig
 const String kBaseUrl = 'http://10.198.197.181:3000';
@@ -862,7 +863,7 @@ class _RegistrarEstudiantePageState extends State<RegistrarEstudiantePage> {
 }
 
 // ==========================================
-// 5. PÁGINA DE INFORMES HISTÓRICOS (Con calendario y entrada manual)
+// 5. PÁGINA DE INFORMES HISTÓRICOS (Con calendario y gráfica estadística - Guía 7)
 // ==========================================
 class InformesPage extends StatefulWidget {
   const InformesPage({super.key});
@@ -936,6 +937,27 @@ class _InformesPageState extends State<InformesPage> {
     }
   }
 
+  // Generación de secciones para la gráfica de pastel (Guía 7)[cite: 10]
+  List<PieChartSectionData> _generarDatosPastel() {
+    return _informe.map((item) {
+      final tipo = item['tipo'] ?? 'Utensilio';
+      final entregados = double.tryParse(item['entregados'].toString()) ?? 0.0;
+      
+      Color colorUtensilio = Colors.green;
+      if (tipo == 'Plato') colorUtensilio = Colors.blue;
+      if (tipo == 'Vaso') colorUtensilio = Colors.orange;
+      if (tipo == 'Taza') colorUtensilio = Colors.redAccent;
+
+      return PieChartSectionData(
+        value: entregados,
+        title: "$tipo\n($entregados)",
+        color: colorUtensilio,
+        radius: 65,
+        titleStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white),
+      );
+    }).toList();
+  }
+
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
@@ -979,12 +1001,32 @@ class _InformesPageState extends State<InformesPage> {
               ),
             ),
             const SizedBox(height: 20),
+            // Sección de Gráfica Estadística (Guía 7)[cite: 10]
+            SizedBox(
+              height: 180,
+              child: _cargando
+                  ? const Center(child: CircularProgressIndicator())
+                  : _informe.isEmpty
+                      ? const Center(
+                          child: Text('Selecciona una fecha para ver la gráfica estadística',
+                              textAlign: TextAlign.center, style: TextStyle(color: Colors.grey)))
+                      : PieChart(
+                          PieChartData(
+                            sections: _generarDatosPastel(),
+                            centerSpaceRadius: 35,
+                            sectionsSpace: 2,
+                          ),
+                        ),
+            ),
+            const SizedBox(height: 10),
+            const Divider(),
+            const SizedBox(height: 10),
             Expanded(
               child: _cargando
                   ? const Center(child: CircularProgressIndicator())
                   : _informe.isEmpty
                       ? const Center(
-                          child: Text('Selecciona una fecha o ingrésala manualmente para ver los registros',
+                          child: Text('No hay registros detallados para mostrar en lista',
                               textAlign: TextAlign.center, style: TextStyle(color: Colors.grey)))
                       : ListView.builder(
                           itemCount: _informe.length,
