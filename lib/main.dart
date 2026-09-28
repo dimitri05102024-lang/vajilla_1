@@ -893,11 +893,11 @@ class _InformesPageState extends State<InformesPage> {
 
     setState(() => _cargando = true);
     try {
-      final url = Uri.parse('$kBaseUrl/informe/$fecha');[cite: 5]
-      final response = await http.get(url);[cite: 5]
+      final url = Uri.parse('$kBaseUrl/informe/$fecha');
+      final response = await http.get(url);
       
       if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);[cite: 5]
+        final data = jsonDecode(response.body);
         setState(() {
           _informe = data is List ? data : (data['informe'] ?? []);
         });
@@ -905,7 +905,7 @@ class _InformesPageState extends State<InformesPage> {
         setState(() => _informe = []);
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Error al obtener informe histórico'), backgroundColor: Colors.red),[cite: 5]
+          const SnackBar(content: Text('Error al obtener informe histórico'), backgroundColor: Colors.red),
         );
       }
     } catch (_) {
@@ -936,7 +936,7 @@ class _InformesPageState extends State<InformesPage> {
             TextField(
               controller: _fechaController,
               decoration: const InputDecoration(
-                labelText: 'Ingrese fecha (YYYY-MM-DD)',[cite: 5]
+                labelText: 'Ingrese fecha (YYYY-MM-DD)',
                 prefixIcon: Icon(Icons.calendar_today_outlined),
                 border: OutlineInputBorder(),
               ),
@@ -980,10 +980,10 @@ class _InformesPageState extends State<InformesPage> {
                                 contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
                                 leading: CircleAvatar(
                                   backgroundColor: cs.primary.withOpacity(0.1),
-                                  child: Icon(_iconoTipo[tipo] ?? Icons.history, color: cs.primary),[cite: 5]
+                                  child: Icon(_iconoTipo[tipo] ?? Icons.history, color: cs.primary),
                                 ),
-                                title: Text("Utensilio: $tipo", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),[cite: 5]
-                                subtitle: Text("Entregados: $entregados", style: const TextStyle(fontSize: 13)),[cite: 5]
+                                title: Text("Utensilio: $tipo", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                                subtitle: Text("Entregados: $entregados", style: const TextStyle(fontSize: 13)),
                               ),
                             );
                           },
