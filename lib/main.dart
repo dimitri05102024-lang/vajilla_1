@@ -862,7 +862,7 @@ class _RegistrarEstudiantePageState extends State<RegistrarEstudiantePage> {
 }
 
 // ==========================================
-// 5. PÁGINA DE INFORMES HISTÓRICOS (Actualizada con filtro por fecha)
+// 5. PÁGINA DE INFORMES HISTÓRICOS (Con calendario y entrada manual)
 // ==========================================
 class InformesPage extends StatefulWidget {
   const InformesPage({super.key});
@@ -882,11 +882,28 @@ class _InformesPageState extends State<InformesPage> {
     'Taza': Icons.coffee,
   };
 
+  // Método para desplegar el selector de fechas gráfico
+  Future<void> _seleccionarFecha(BuildContext context) async {
+    DateTime? fechaSeleccionada = await showDatePicker(
+      context: context,
+      initialDate: DateTime.now(),
+      firstDate: DateTime(2025),
+      lastDate: DateTime(2030),
+    );
+
+    if (fechaSeleccionada != null) {
+      setState(() {
+        _fechaController.text = fechaSeleccionada.toIso8601String().split('T')[0];
+      });
+      _obtenerInformeHistorico();
+    }
+  }
+
   Future<void> _obtenerInformeHistorico() async {
     final fecha = _fechaController.text.trim();
     if (fecha.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Por favor ingresa una fecha (YYYY-MM-DD)'), backgroundColor: Colors.red),
+        const SnackBar(content: Text('Por favor ingresa o selecciona una fecha (YYYY-MM-DD)'), backgroundColor: Colors.red),
       );
       return;
     }
@@ -935,10 +952,15 @@ class _InformesPageState extends State<InformesPage> {
           children: [
             TextField(
               controller: _fechaController,
-              decoration: const InputDecoration(
-                labelText: 'Ingrese fecha (YYYY-MM-DD)',
-                prefixIcon: Icon(Icons.calendar_today_outlined),
-                border: OutlineInputBorder(),
+              decoration: InputDecoration(
+                labelText: 'Fecha (YYYY-MM-DD)',
+                prefixIcon: const Icon(Icons.calendar_today_outlined),
+                suffixIcon: IconButton(
+                  icon: Icon(Icons.event_note, color: cs.primary),
+                  onPressed: () => _seleccionarFecha(context),
+                  tooltip: 'Abrir Calendario',
+                ),
+                border: const OutlineInputBorder(),
               ),
             ),
             const SizedBox(height: 15),
@@ -962,7 +984,7 @@ class _InformesPageState extends State<InformesPage> {
                   ? const Center(child: CircularProgressIndicator())
                   : _informe.isEmpty
                       ? const Center(
-                          child: Text('Ingresa una fecha y presiona consultar para ver los registros',
+                          child: Text('Selecciona una fecha o ingrésala manualmente para ver los registros',
                               textAlign: TextAlign.center, style: TextStyle(color: Colors.grey)))
                       : ListView.builder(
                           itemCount: _informe.length,
