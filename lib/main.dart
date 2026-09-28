@@ -43,7 +43,7 @@ class CocinaEscolarApp extends StatelessWidget {
 }
 
 // ==========================================
-// PÁGINA PRINCIPAL CON NAVEGACIÓN INFERIOR (4 PESTAÑAS)
+// PÁGINA PRINCIPAL CON NAVEGACIÓN INFERIOR (5 PESTAÑAS)
 // ==========================================
 class MainNavigatorPage extends StatefulWidget {
   const MainNavigatorPage({super.key});
@@ -58,7 +58,8 @@ class _MainNavigatorPageState extends State<MainNavigatorPage> {
   final List<Widget> _pages = [
     const HomePage(),
     const RegistrarPage(),
-    const InformesPage(),
+    const EstadisticasPage(), // Pantalla dedicada a gráficas sin fecha
+    const InformesPage(),     // Histórico con selector de fecha
     const ConfiguracionPage(),
   ];
 
@@ -81,8 +82,8 @@ class _MainNavigatorPageState extends State<MainNavigatorPage> {
           type: BottomNavigationBarType.fixed,
           selectedItemColor: const Color(0xFFEF5350), // Rojo claro seleccionado
           unselectedItemColor: Colors.grey,
-          selectedLabelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 11),
-          unselectedLabelStyle: const TextStyle(fontSize: 11),
+          selectedLabelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 10),
+          unselectedLabelStyle: const TextStyle(fontSize: 10),
           items: const [
             BottomNavigationBarItem(
               icon: Icon(Icons.home_rounded),
@@ -91,6 +92,10 @@ class _MainNavigatorPageState extends State<MainNavigatorPage> {
             BottomNavigationBarItem(
               icon: Icon(Icons.qr_code_scanner_rounded),
               label: 'Registrar',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.pie_chart_rounded),
+              label: 'Gráficas',
             ),
             BottomNavigationBarItem(
               icon: Icon(Icons.bar_chart_rounded),
@@ -160,7 +165,7 @@ class HomePage extends StatelessWidget {
               title: const Text('Devolución de Utensilios', style: TextStyle(fontWeight: FontWeight.bold)),
               subtitle: const Text('Escanear carnet y devolver'),
               onTap: () {
-                Navigator.pop(context); // Cierra el Drawer
+                Navigator.pop(context);
                 Navigator.push(
                   context,
                   MaterialPageRoute(builder: (_) => const PendientesPage()),
@@ -477,7 +482,160 @@ class _RegistrarPageState extends State<RegistrarPage> {
 }
 
 // ==========================================
-// 3. PÁGINA DE UTENSILIOS PENDIENTES Y DEVOLUCIÓN
+// 3. PÁGINA DE ESTADÍSTICAS (Gráfica automática de hoy sin fecha)
+// ==========================================
+class EstadisticasPage extends StatefulWidget {
+  const EstadisticasPage({super.key});
+
+  @override
+  State<EstadisticasPage> createState() => _EstadisticasPageState();
+}
+
+class _EstadisticasPageState extends State<EstadisticasPage> {
+  bool _cargando = false;
+  List<dynamic> _informe = [];
+  String _fechaHoy = '';
+
+  final _iconoTipo = const {
+    'Plato': Icons.dinner_dining,
+    'Vaso': Icons.local_drink,
+    'Taza': Icons.coffee,
+  };
+
+  @override
+  void initState() {
+    super.initState();
+    _obtenerEstadisticasHoy();
+  }
+
+  Future<void> _obtenerEstadisticasHoy() async {
+    setState(() => _cargando = true);
+    try {
+      final url = Uri.parse('$kBaseUrl/informe');
+      final response = await http.get(url);
+      
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        setState(() {
+          _informe = data is List ? data : (data['informe'] ?? []);
+          _fechaHoy = data['fecha'] ?? '';
+        });
+      } else {
+        setState(() => _informe = []);
+      }
+    } catch (_) {
+      setState(() => _informe = []);
+    } finally {
+      if (mounted) setState(() => _cargando = false);
+    }
+  }
+
+  List<PieChartSectionData> _generarDatosPastel() {
+    return _informe.map((item) {
+      final tipo = item['tipo'] ?? 'Utensilio';
+      final entregados = double.tryParse(item['entregados'].toString()) ?? 0.0;
+      
+      Color colorUtensilio = Colors.green;
+      if (tipo == 'Plato') colorUtensilio = Colors.blue;
+      if (tipo == 'Vaso') colorUtensilio = Colors.orange;
+      if (tipo == 'Taza') colorUtensilio = Colors.redAccent;
+
+      return PieChartSectionData(
+        value: entregados,
+        title: "$tipo\n($entregados)",
+        color: colorUtensilio,
+        radius: 65,
+        titleStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white),
+      );
+    }).toList();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return Scaffold(
+      appBar: AppBar(
+        backgroundColor: cs.primary,
+        foregroundColor: Colors.white,
+        title: const Text('Estadísticas del Día', style: TextStyle(fontWeight: FontWeight.bold)),
+        centerTitle: true,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh_rounded),
+            onPressed: _obtenerEstadisticasHoy,
+            tooltip: 'Actualizar',
+          ),
+        ],
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          children: [
+            if (_fechaHoy.isNotEmpty)
+              Text('Fecha Actual: $_fechaHoy', style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.grey, fontSize: 13)),
+            const SizedBox(height: 15),
+            SizedBox(
+              height: 200,
+              child: _cargando
+                  ? const Center(child: CircularProgressIndicator())
+                  : _informe.isEmpty
+                      ? const Center(
+                          child: Text('No hay registros estadísticos para hoy',
+                              textAlign: TextAlign.center, style: TextStyle(color: Colors.grey)))
+                      : PieChart(
+                          PieChartData(
+                            sections: _generarDatosPastel(),
+                            centerSpaceRadius: 35,
+                            sectionsSpace: 2,
+                          ),
+                        ),
+            ),
+            const SizedBox(height: 15),
+            const Divider(),
+            const SizedBox(height: 10),
+            Expanded(
+              child: _cargando
+                  ? const Center(child: CircularProgressIndicator())
+                  : _informe.isEmpty
+                      ? const Center(
+                          child: Text('Sin detalles de movimientos para hoy',
+                              textAlign: TextAlign.center, style: TextStyle(color: Colors.grey)))
+                      : ListView.builder(
+                          itemCount: _informe.length,
+                          itemBuilder: (context, index) {
+                            final item = _informe[index];
+                            final tipo = item['tipo'] ?? 'Utensilio';
+                            final entregados = item['entregados'] ?? 0;
+                            final devueltos = item['devueltos'] ?? 0;
+                            final pendientes = item['pendientes'] ?? 0;
+
+                            return Card(
+                              color: Colors.white,
+                              margin: const EdgeInsets.only(bottom: 12),
+                              elevation: 1,
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                              child: ListTile(
+                                contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                                leading: CircleAvatar(
+                                  backgroundColor: cs.primary.withOpacity(0.1),
+                                  child: Icon(_iconoTipo[tipo] ?? Icons.analytics, color: cs.primary),
+                                ),
+                                title: Text("Utensilio: $tipo", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                                subtitle: Text("Entregados: $entregados | Devueltos: $devueltos | Pendientes: $pendientes", style: const TextStyle(fontSize: 12)),
+                              ),
+                            );
+                          },
+                        ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ==========================================
+// 4. PÁGINA DE UTENSILIOS PENDIENTES Y DEVOLUCIÓN
 // ==========================================
 class PendientesPage extends StatefulWidget {
   const PendientesPage({super.key});
@@ -735,7 +893,7 @@ class _PendientesPageState extends State<PendientesPage> {
 }
 
 // ==========================================
-// 4. PÁGINA PARA REGISTRAR NUEVO ESTUDIANTE
+// 5. PÁGINA PARA REGISTRAR NUEVO ESTUDIANTE
 // ==========================================
 class RegistrarEstudiantePage extends StatefulWidget {
   final String codigoInicial;
@@ -863,7 +1021,7 @@ class _RegistrarEstudiantePageState extends State<RegistrarEstudiantePage> {
 }
 
 // ==========================================
-// 5. PÁGINA DE INFORMES HISTÓRICOS (Con calendario y gráfica estadística - Guía 7)
+// 6. PÁGINA DE INFORMES HISTÓRICOS (Con calendario y gráfica - Guía 7)
 // ==========================================
 class InformesPage extends StatefulWidget {
   const InformesPage({super.key});
@@ -883,7 +1041,6 @@ class _InformesPageState extends State<InformesPage> {
     'Taza': Icons.coffee,
   };
 
-  // Método para desplegar el selector de fechas gráfico
   Future<void> _seleccionarFecha(BuildContext context) async {
     DateTime? fechaSeleccionada = await showDatePicker(
       context: context,
@@ -937,7 +1094,6 @@ class _InformesPageState extends State<InformesPage> {
     }
   }
 
-  // Generación de secciones para la gráfica de pastel (Guía 7)[cite: 10]
   List<PieChartSectionData> _generarDatosPastel() {
     return _informe.map((item) {
       final tipo = item['tipo'] ?? 'Utensilio';
@@ -1001,7 +1157,6 @@ class _InformesPageState extends State<InformesPage> {
               ),
             ),
             const SizedBox(height: 20),
-            // Sección de Gráfica Estadística (Guía 7)[cite: 10]
             SizedBox(
               height: 180,
               child: _cargando
@@ -1061,7 +1216,7 @@ class _InformesPageState extends State<InformesPage> {
 }
 
 // ==========================================
-// 6. CONFIGURACIÓN
+// 7. CONFIGURACIÓN
 // ==========================================
 class ConfiguracionPage extends StatelessWidget {
   const ConfiguracionPage({super.key});
