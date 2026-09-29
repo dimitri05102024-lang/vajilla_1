@@ -11,7 +11,6 @@ import 'package:excel/excel.dart' as excel_pkg;
 import 'package:path_provider/path_provider.dart';
 import 'package:open_file_plus/open_file_plus.dart';
 
-// ⚠️ IP configurada hacia el Backend Node.js
 const String kBaseUrl = 'http://10.198.197.181:3000';
 
 void main() => runApp(const CocinaEscolarApp());
@@ -21,7 +20,7 @@ class CocinaEscolarApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const seed = Color(0xFFB71C1C); // Rojo institucional profundo
+    const seed = Color(0xFFB71C1C);
     return MaterialApp(
       title: 'Cocina Escolar',
       debugShowCheckedModeBanner: false,
@@ -63,9 +62,6 @@ class CocinaEscolarApp extends StatelessWidget {
   }
 }
 
-// ==========================================
-// NAVEGACIÓN PRINCIPAL DE LA APLICACIÓN
-// ==========================================
 class MainNavigatorPage extends StatefulWidget {
   const MainNavigatorPage({super.key});
 
@@ -145,9 +141,6 @@ class _MainNavigatorPageState extends State<MainNavigatorPage> {
   }
 }
 
-// ==========================================
-// 1. PÁGINA DE INICIO
-// ==========================================
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
 
@@ -367,9 +360,6 @@ class _AccesoCard extends StatelessWidget {
   }
 }
 
-// ==========================================
-// 2. PÁGINA DE REGISTRO DE RETIRO Y ESCANEO
-// ==========================================
 class RegistrarPage extends StatefulWidget {
   const RegistrarPage({super.key});
 
@@ -568,9 +558,6 @@ class _RegistrarPageState extends State<RegistrarPage> {
   }
 }
 
-// ==========================================
-// 3. PÁGINA DE ESTADÍSTICAS
-// ==========================================
 class EstadisticasPage extends StatefulWidget {
   const EstadisticasPage({super.key});
 
@@ -812,9 +799,6 @@ class _ItemLeyenda extends StatelessWidget {
   }
 }
 
-// ==========================================
-// 4. PÁGINA DE UTENSILIOS PENDIENTES Y DEVOLUCIÓN
-// ==========================================
 class PendientesPage extends StatefulWidget {
   const PendientesPage({super.key});
 
@@ -1073,9 +1057,6 @@ class _PendientesPageState extends State<PendientesPage> {
   }
 }
 
-// ==========================================
-// 5. PÁGINA PARA REGISTRAR NUEVO ESTUDIANTE
-// ==========================================
 class RegistrarEstudiantePage extends StatefulWidget {
   final String codigoInicial;
   const RegistrarEstudiantePage({super.key, this.codigoInicial = ''});
@@ -1211,9 +1192,6 @@ class _RegistrarEstudiantePageState extends State<RegistrarEstudiantePage> {
   }
 }
 
-// ==========================================
-// 6. PÁGINA DE INFORMES Y EXPORTACIÓN
-// ==========================================
 class InformesPage extends StatefulWidget {
   const InformesPage({super.key});
 
@@ -1293,7 +1271,7 @@ class _InformesPageState extends State<InformesPage> {
     pdf.addPage(
       pw.Page(
         build: (pw.Context context) => pw.Column(
-          cross: pw.CrossAxisAlignment.start,
+          crossAxisAlignment: pw.CrossAxisAlignment.start,
           children: [
             pw.Text("Informe Diario - Cocina Escolar INFRAMEN", style: pw.TextStyle(fontSize: 20, fontWeight: pw.FontWeight.bold)),
             pw.SizedBox(height: 6),
@@ -1331,7 +1309,7 @@ class _InformesPageState extends State<InformesPage> {
         excel_pkg.TextCellValue("Utensilio"),
         excel_pkg.TextCellValue("Entregados"),
         excel_pkg.TextCellValue("Devueltos"),
-        excel_pkg.TextCellValue("Pendientes")
+        excel_pkg.TextCellValue("Pendientes"),
       ]);
 
       for (var item in _informe) {
@@ -1358,7 +1336,7 @@ class _InformesPageState extends State<InformesPage> {
             action: SnackBarAction(
               label: 'ABRIR',
               textColor: Colors.white,
-              onPressed: () => OpenFilePlus.open(path),
+              onPressed: () => OpenFile.open(path),
             ),
           ),
         );
@@ -1482,9 +1460,6 @@ class _InformesPageState extends State<InformesPage> {
   }
 }
 
-// ==========================================
-// 7. CONFIGURACIÓN
-// ==========================================
 class ConfiguracionPage extends StatelessWidget {
   const ConfiguracionPage({super.key});
 
@@ -1537,9 +1512,6 @@ class ConfiguracionPage extends StatelessWidget {
   }
 }
 
-// ==========================================
-// PANTALLA DE ESCANEO DE CÁMARA
-// ==========================================
 class EscaneoPage extends StatefulWidget {
   final ValueChanged<String> onCodigoEscaneado;
   const EscaneoPage({super.key, required this.onCodigoEscaneado});
