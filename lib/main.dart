@@ -33,11 +33,13 @@ class CocinaEscolarApp extends StatelessWidget {
           surface: Colors.white,
         ),
         textTheme: GoogleFonts.poppinsTextTheme(),
-        scaffoldBackgroundColor: const Color(0xFFF4F6F9),
+        scaffoldBackgroundColor: const Color(0xFFF8FAFC),
         cardTheme: CardTheme(
-          elevation: 2,
-          shadowColor: Colors.black.withOpacity(0.08),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          elevation: 0,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+            side: const BorderSide(color: Color(0xFFE2E8F0)),
+          ),
         ),
         inputDecorationTheme: const InputDecorationTheme(
           filled: true,
@@ -92,7 +94,7 @@ class _MainNavigatorPageState extends State<MainNavigatorPage> {
           color: const Color(0xFF1E293B),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.15),
+              color: Colors.black.withOpacity(0.12),
               blurRadius: 12,
               offset: const Offset(0, -4),
             )
@@ -144,7 +146,7 @@ class _MainNavigatorPageState extends State<MainNavigatorPage> {
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
 
-  Widget _buildAppLogo({double size = 45}) {
+  Widget _buildAppLogo({double size = 80}) {
     return Image.asset(
       'assets/icon/Logo_IN.PNG',
       width: size,
@@ -156,7 +158,7 @@ class HomePage extends StatelessWidget {
           width: size,
           height: size,
           fit: BoxFit.contain,
-          errorBuilder: (_, __, ___) => Icon(Icons.restaurant_menu, size: size, color: Colors.white),
+          errorBuilder: (_, __, ___) => Icon(Icons.restaurant_menu, size: size, color: const Color(0xFFB71C1C)),
         );
       },
     );
@@ -169,14 +171,7 @@ class HomePage extends StatelessWidget {
       appBar: AppBar(
         backgroundColor: cs.primary,
         foregroundColor: Colors.white,
-        title: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            _buildAppLogo(size: 32),
-            const SizedBox(width: 10),
-            const Text('Cocina Escolar', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 19)),
-          ],
-        ),
+        title: const Text('Cocina Escolar', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 19)),
         centerTitle: true,
         elevation: 0,
         leading: Builder(
@@ -237,72 +232,116 @@ class HomePage extends StatelessWidget {
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(22),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [cs.primary, const Color(0xFFD32F2F)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                borderRadius: BorderRadius.circular(22),
-                boxShadow: [
-                  BoxShadow(color: cs.primary.withOpacity(0.35), blurRadius: 12, offset: const Offset(0, 6))
-                ],
+            // Banner Central con Logo de INFRAMEN
+            Card(
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+                side: const BorderSide(color: Color(0xFFE2E8F0)),
               ),
-              child: Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.2),
-                      shape: BoxShape.circle,
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    _buildAppLogo(size: 95),
+                    const SizedBox(height: 12),
+                    const Text(
+                      'INFRAMEN',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF1E293B),
+                        letterSpacing: 1.2,
+                      ),
                     ),
-                    child: _buildAppLogo(size: 42),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text('¡Bienvenido al Sistema!',
-                            style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
-                        const SizedBox(height: 4),
-                        Text('INFRAMEN · Control de Vajilla',
-                            style: TextStyle(color: Colors.white.withOpacity(0.9), fontSize: 13)),
-                      ],
+                    const SizedBox(height: 2),
+                    const Text(
+                      'Control y Gestión de Cocina Escolar',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(fontSize: 12, color: Color(0xFF64748B)),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
-            const SizedBox(height: 25),
-            const Text('Panel de Acceso Rápido',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF1E293B))),
-            const SizedBox(height: 15),
+            const SizedBox(height: 24),
+            
+            // Sección: Entrega de Alimentos
+            const Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                'Entrega de Alimentos',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
+              ),
+            ),
+            const SizedBox(height: 12),
             Row(
               children: [
                 Expanded(
                   child: _AccesoCard(
-                    icon: Icons.qr_code_scanner,
+                    icon: Icons.qr_code_scanner_rounded,
                     titulo: 'Escanear Retiro',
-                    color: const Color(0xFFC62828),
+                    subtitulo: 'Registrar préstamo',
+                    color: const Color(0xFFB71C1C),
                     onTap: () {
                       Navigator.push(context, MaterialPageRoute(builder: (_) => const RegistrarPage()));
                     },
                   ),
                 ),
-                const SizedBox(width: 15),
+                const SizedBox(width: 14),
                 Expanded(
                   child: _AccesoCard(
                     icon: Icons.assignment_return_rounded,
                     titulo: 'Ver Pendientes',
+                    subtitulo: 'Devolución de vajilla',
                     color: const Color(0xFF1E293B),
                     onTap: () {
                       Navigator.push(context, MaterialPageRoute(builder: (_) => const PendientesPage()));
+                    },
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 24),
+
+            // Sección: Inventario y Reportes
+            const Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                'Inventario y Reportes',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
+              ),
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  child: _AccesoCard(
+                    icon: Icons.pie_chart_rounded,
+                    titulo: 'Estadísticas',
+                    subtitulo: 'Gráficos del día',
+                    color: const Color(0xFF0284C7),
+                    onTap: () {
+                      Navigator.push(context, MaterialPageRoute(builder: (_) => const EstadisticasPage()));
+                    },
+                  ),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: _AccesoCard(
+                    icon: Icons.picture_as_pdf_rounded,
+                    titulo: 'Informes',
+                    subtitulo: 'PDF y Excel',
+                    color: const Color(0xFF16A34A),
+                    onTap: () {
+                      Navigator.push(context, MaterialPageRoute(builder: (_) => const InformesPage()));
                     },
                   ),
                 ),
@@ -318,39 +357,53 @@ class HomePage extends StatelessWidget {
 class _AccesoCard extends StatelessWidget {
   final IconData icon;
   final String titulo;
+  final String subtitulo;
   final Color color;
   final VoidCallback onTap;
 
-  const _AccesoCard({required this.icon, required this.titulo, required this.color, required this.onTap});
+  const _AccesoCard({
+    required this.icon,
+    required this.titulo,
+    required this.subtitulo,
+    required this.color,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Material(
       color: Colors.white,
-      borderRadius: BorderRadius.circular(18),
-      elevation: 2,
-      shadowColor: Colors.black.withOpacity(0.06),
+      borderRadius: BorderRadius.circular(20),
+      elevation: 0,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(20),
         child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 22, horizontal: 16),
+          padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(18),
+            borderRadius: BorderRadius.circular(20),
             border: Border.all(color: const Color(0xFFE2E8F0)),
           ),
           child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              CircleAvatar(
-                radius: 26,
-                backgroundColor: color.withOpacity(0.12),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: color.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(14),
+                ),
                 child: Icon(icon, color: color, size: 28),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 16),
               Text(
                 titulo,
-                textAlign: TextAlign.center,
-                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xFF334155)),
+                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Color(0xFF1E293B)),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                subtitulo,
+                style: const TextStyle(fontSize: 11, color: Color(0xFF64748B)),
               ),
             ],
           ),
@@ -613,62 +666,75 @@ class _EstadisticasPageState extends State<EstadisticasPage> {
 
     return List.generate(_informe.length, (i) {
       final isTouched = i == _touchedIndex;
-      final fontSize = isTouched ? 16.0 : 12.0;
-      final radius = isTouched ? 75.0 : 65.0;
+      final radius = isTouched ? 68.0 : 58.0;
       final item = _informe[i];
       final tipo = item['tipo'] ?? 'Utensilio';
       final entregados = double.tryParse(item['entregados'].toString()) ?? 0.0;
-      final porcentaje = total > 0 ? ((entregados / total) * 100).toStringAsFixed(1) : '0';
+      final porcentaje = total > 0 ? (entregados / total * 100) : 0.0;
 
       Color colorUtensilio;
       switch (tipo) {
         case 'Plato':
-          colorUtensilio = const Color(0xFF1E88E5);
+          colorUtensilio = const Color(0xFF2563EB);
           break;
         case 'Vaso':
-          colorUtensilio = const Color(0xFFFB8C00);
+          colorUtensilio = const Color(0xFFF59E0B);
           break;
         case 'Taza':
-          colorUtensilio = const Color(0xFFE53935);
+          colorUtensilio = const Color(0xFFEF4444);
           break;
         default:
-          colorUtensilio = const Color(0xFF43A047);
+          colorUtensilio = const Color(0xFF10B981);
       }
 
       return PieChartSectionData(
         color: colorUtensilio,
         value: entregados,
-        title: '$porcentaje%',
+        title: '${porcentaje.toStringAsFixed(0)}%',
         radius: radius,
-        titleStyle: TextStyle(fontSize: fontSize, fontWeight: FontWeight.bold, color: Colors.white),
-        badgeWidget: isTouched
-            ? Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(color: Colors.black87, borderRadius: BorderRadius.circular(8)),
-                child: Text('$tipo: ${entregados.toInt()}', style: const TextStyle(color: Colors.white, fontSize: 11)),
-              )
-            : null,
-        badgePositionPercentageOffset: 1.2,
+        titleStyle: TextStyle(
+          fontSize: isTouched ? 15.0 : 12.0,
+          fontWeight: FontWeight.bold,
+          color: Colors.white,
+          shadows: const [Shadow(color: Colors.black26, blurRadius: 4)],
+        ),
+        borderSide: isTouched ? const BorderSide(color: Colors.white, width: 3) : BorderSide.none,
       );
     });
   }
 
+  int _calcularTotalEntregados() {
+    int total = 0;
+    for (var item in _informe) {
+      total += int.tryParse(item['entregados'].toString()) ?? 0;
+    }
+    return total;
+  }
+
   Widget _buildLeyenda() {
-    return const Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        _ItemLeyenda(color: Color(0xFF1E88E5), texto: 'Platos'),
-        SizedBox(width: 15),
-        _ItemLeyenda(color: Color(0xFFFB8C00), texto: 'Vasos'),
-        SizedBox(width: 15),
-        _ItemLeyenda(color: Color(0xFFE53935), texto: 'Tazas'),
-      ],
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF8FAFC),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+      ),
+      child: const Row(
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        children: [
+          _ItemLeyenda(color: Color(0xFF2563EB), texto: 'Platos'),
+          _ItemLeyenda(color: Color(0xFFF59E0B), texto: 'Vasos'),
+          _ItemLeyenda(color: Color(0xFFEF4444), texto: 'Tazas'),
+        ],
+      ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    final totalEntregados = _calcularTotalEntregados();
+
     return Scaffold(
       appBar: AppBar(
         backgroundColor: cs.primary,
@@ -683,97 +749,156 @@ class _EstadisticasPageState extends State<EstadisticasPage> {
           ),
         ],
       ),
-      body: Padding(
+      body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
         child: Column(
           children: [
             if (_fechaHoy.isNotEmpty)
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                margin: const EdgeInsets.only(bottom: 16),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 decoration: BoxDecoration(
-                  color: cs.primary.withOpacity(0.08),
+                  color: Colors.white,
                   borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: const Color(0xFFE2E8F0)),
                 ),
-                child: Text('Fecha de hoy: $_fechaHoy',
-                    style: TextStyle(fontWeight: FontWeight.bold, color: cs.primary, fontSize: 13)),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.calendar_today_rounded, size: 16, color: cs.primary),
+                    const SizedBox(width: 8),
+                    Text('Fecha actual: $_fechaHoy',
+                        style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF334155), fontSize: 13)),
+                  ],
+                ),
               ),
-            const SizedBox(height: 15),
             Card(
               child: Padding(
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.all(20),
                 child: Column(
                   children: [
-                    const Text('Proporción de Vajilla Entregada', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                    const SizedBox(height: 15),
+                    const Text('Distribución de Vajilla Entregada',
+                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Color(0xFF0F172A))),
+                    const SizedBox(height: 20),
                     SizedBox(
-                      height: 200,
+                      height: 220,
                       child: _cargando
                           ? const Center(child: CircularProgressIndicator())
                           : _informe.isEmpty
                               ? const Center(
                                   child: Text('No hay registros para hoy',
                                       textAlign: TextAlign.center, style: TextStyle(color: Colors.grey)))
-                              : PieChart(
-                                  PieChartData(
-                                    pieTouchData: PieTouchData(
-                                      touchCallback: (FlTouchEvent event, pieTouchResponse) {
-                                        setState(() {
-                                          if (!event.isInterestedForInteractions ||
-                                              pieTouchResponse == null ||
-                                              pieTouchResponse.touchedSection == null) {
-                                            _touchedIndex = -1;
-                                            return;
-                                          }
-                                          _touchedIndex = pieTouchResponse.touchedSection!.touchedSectionIndex;
-                                        });
-                                      },
+                              : Stack(
+                                  children: [
+                                    PieChart(
+                                      PieChartData(
+                                        pieTouchData: PieTouchData(
+                                          touchCallback: (FlTouchEvent event, pieTouchResponse) {
+                                            setState(() {
+                                              if (!event.isInterestedForInteractions ||
+                                                  pieTouchResponse == null ||
+                                                  pieTouchResponse.touchedSection == null) {
+                                                _touchedIndex = -1;
+                                                return;
+                                              }
+                                              _touchedIndex = pieTouchResponse.touchedSection!.touchedSectionIndex;
+                                            });
+                                          },
+                                        ),
+                                        borderData: FlBorderData(show: false),
+                                        sectionsSpace: 4,
+                                        centerSpaceRadius: 55,
+                                        sections: _generarDatosPastel(),
+                                      ),
                                     ),
-                                    borderData: FlBorderData(show: false),
-                                    sectionsSpace: 3,
-                                    centerSpaceRadius: 40,
-                                    sections: _generarDatosPastel(),
-                                  ),
+                                    Center(
+                                      child: Column(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Text(
+                                            '$totalEntregados',
+                                            style: const TextStyle(
+                                              fontSize: 26,
+                                              fontWeight: FontWeight.bold,
+                                              color: Color(0xFF0F172A),
+                                            ),
+                                          ),
+                                          const Text(
+                                            'Total',
+                                            style: TextStyle(fontSize: 12, color: Color(0xFF64748B)),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
                                 ),
                     ),
-                    const SizedBox(height: 15),
+                    const SizedBox(height: 20),
                     _buildLeyenda(),
                   ],
                 ),
               ),
             ),
-            const SizedBox(height: 15),
-            Expanded(
-              child: _cargando
-                  ? const Center(child: CircularProgressIndicator())
-                  : _informe.isEmpty
-                      ? const Center(
-                          child: Text('Sin detalles de movimientos para hoy',
-                              textAlign: TextAlign.center, style: TextStyle(color: Colors.grey)))
-                      : ListView.builder(
-                          itemCount: _informe.length,
-                          itemBuilder: (context, index) {
-                            final item = _informe[index];
-                            final tipo = item['tipo'] ?? 'Utensilio';
-                            final entregados = item['entregados'] ?? 0;
-                            final devueltos = item['devueltos'] ?? 0;
-                            final pendientes = item['pendientes'] ?? 0;
-
-                            return Card(
-                              margin: const EdgeInsets.only(bottom: 12),
-                              child: ListTile(
-                                contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
-                                leading: CircleAvatar(
-                                  backgroundColor: cs.primary.withOpacity(0.1),
-                                  child: Icon(_iconoTipo[tipo] ?? Icons.analytics, color: cs.primary),
-                                ),
-                                title: Text("Utensilio: $tipo", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
-                                subtitle: Text("Entregados: $entregados | Devueltos: $devueltos | Pendientes: $pendientes",
-                                    style: const TextStyle(fontSize: 12)),
-                              ),
-                            );
-                          },
-                        ),
+            const SizedBox(height: 20),
+            const Align(
+              alignment: Alignment.centerLeft,
+              child: Text('Detalle por Utensilio',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF0F172A))),
             ),
+            const SizedBox(height: 12),
+            _cargando
+                ? const Center(child: CircularProgressIndicator())
+                : _informe.isEmpty
+                    ? const Center(
+                        child: Text('Sin detalles de movimientos para hoy',
+                            textAlign: TextAlign.center, style: TextStyle(color: Colors.grey)))
+                    : ListView.builder(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        itemCount: _informe.length,
+                        itemBuilder: (context, index) {
+                          final item = _informe[index];
+                          final tipo = item['tipo'] ?? 'Utensilio';
+                          final entregados = item['entregados'] ?? 0;
+                          final devueltos = item['devueltos'] ?? 0;
+                          final pendientes = item['pendientes'] ?? 0;
+
+                          return Card(
+                            margin: const EdgeInsets.only(bottom: 12),
+                            child: Padding(
+                              padding: const EdgeInsets.all(16),
+                              child: Row(
+                                children: [
+                                  CircleAvatar(
+                                    radius: 22,
+                                    backgroundColor: cs.primary.withOpacity(0.08),
+                                    child: Icon(_iconoTipo[tipo] ?? Icons.analytics, color: cs.primary, size: 22),
+                                  ),
+                                  const SizedBox(width: 14),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(tipo, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Color(0xFF0F172A))),
+                                        const SizedBox(height: 4),
+                                        Text('Entregados: $entregados', style: const TextStyle(fontSize: 12, color: Color(0xFF64748B))),
+                                      ],
+                                    ),
+                                  ),
+                                  Column(
+                                    crossAxisAlignment: CrossAxisAlignment.end,
+                                    children: [
+                                      Text('Devueltos: $devueltos', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF16A34A))),
+                                      const SizedBox(height: 2),
+                                      Text('Pendientes: $pendientes', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFFDC2626))),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ),
+                          );
+                        },
+                      ),
           ],
         ),
       ),
@@ -791,9 +916,13 @@ class _ItemLeyenda extends StatelessWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Container(width: 12, height: 12, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
+        Container(
+          width: 10,
+          height: 10,
+          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+        ),
         const SizedBox(width: 6),
-        Text(texto, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+        Text(texto, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF334155))),
       ],
     );
   }
