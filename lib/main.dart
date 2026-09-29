@@ -1170,7 +1170,7 @@ class _PendientesPageState extends State<PendientesPage> {
                           Text(tipo, style: TextStyle(color: seleccionado ? Colors.white : Colors.black87, fontWeight: FontWeight.bold, fontSize: 12)),
                           const SizedBox(height: 4),
                           Icon(
-                            seleccionado ? Icons.check_box_rounded : Icons.box_outlined,
+                            seleccionado ? Icons.check_box_rounded : Icons.check_box_outline_blank_rounded,
                             size: 14,
                             color: seleccionado ? Colors.white70 : Colors.grey,
                           ),
