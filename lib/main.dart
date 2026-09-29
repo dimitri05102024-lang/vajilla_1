@@ -76,9 +76,8 @@ class _MainNavigatorPageState extends State<MainNavigatorPage> {
 
   final List<Widget> _pages = const [
     HomePage(),
-    RegistrarPage(),
-    EstadisticasPage(),
-    InformesPage(),
+    EntregaModuloPage(),
+    InventarioModuloPage(),
     ConfiguracionPage(),
   ];
 
@@ -119,16 +118,12 @@ class _MainNavigatorPageState extends State<MainNavigatorPage> {
                   label: 'Inicio',
                 ),
                 BottomNavigationBarItem(
-                  icon: Icon(Icons.qr_code_scanner_rounded),
-                  label: 'Registrar',
+                  icon: Icon(Icons.restaurant_rounded),
+                  label: 'Entrega',
                 ),
                 BottomNavigationBarItem(
-                  icon: Icon(Icons.pie_chart_rounded),
-                  label: 'Gráficas',
-                ),
-                BottomNavigationBarItem(
-                  icon: Icon(Icons.picture_as_pdf_rounded),
-                  label: 'Informes',
+                  icon: Icon(Icons.inventory_2_rounded),
+                  label: 'Inventario',
                 ),
                 BottomNavigationBarItem(
                   icon: Icon(Icons.settings_rounded),
@@ -138,6 +133,86 @@ class _MainNavigatorPageState extends State<MainNavigatorPage> {
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+// ==========================================
+// MÓDULO 1: ENTREGA DE ALIMENTOS
+// ==========================================
+class EntregaModuloPage extends StatelessWidget {
+  const EntregaModuloPage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return Scaffold(
+      appBar: AppBar(
+        backgroundColor: cs.primary,
+        foregroundColor: Colors.white,
+        title: const Text('Módulo: Entrega de Alimentos', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+        centerTitle: true,
+      ),
+      body: ListView(
+        padding: const EdgeInsets.all(20),
+        children: [
+          _AccesoCard(
+            icon: Icons.qr_code_scanner_rounded,
+            titulo: 'Registrar Retiro',
+            subtitulo: 'Escanear carnet y prestar utensilio',
+            color: const Color(0xFFB71C1C),
+            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const RegistrarPage())),
+          ),
+          const SizedBox(height: 16),
+          _AccesoCard(
+            icon: Icons.assignment_return_rounded,
+            titulo: 'Ver Pendientes y Devoluciones',
+            subtitulo: 'Consultar vajilla prestada y registrar devolución',
+            color: const Color(0xFF1E293B),
+            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const PendientesPage())),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ==========================================
+// MÓDULO 2: INVENTARIO Y REPORTES
+// ==========================================
+class InventarioModuloPage extends StatelessWidget {
+  const InventarioModuloPage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return Scaffold(
+      appBar: AppBar(
+        backgroundColor: cs.primary,
+        foregroundColor: Colors.white,
+        title: const Text('Módulo: Inventario', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+        centerTitle: true,
+      ),
+      body: ListView(
+        padding: const EdgeInsets.all(20),
+        children: [
+          _AccesoCard(
+            icon: Icons.pie_chart_rounded,
+            titulo: 'Estadísticas del Día',
+            subtitulo: 'Gráficos y disponibilidad actual',
+            color: const Color(0xFF0284C7),
+            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const EstadisticasPage())),
+          ),
+          const SizedBox(height: 16),
+          _AccesoCard(
+            icon: Icons.picture_as_pdf_rounded,
+            titulo: 'Informes Históricos (PDF y Excel)',
+            subtitulo: 'Consultar fechas anteriores y exportar reportes',
+            color: const Color(0xFF16A34A),
+            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const InformesPage())),
+          ),
+        ],
       ),
     );
   }
@@ -174,66 +249,11 @@ class HomePage extends StatelessWidget {
         title: const Text('Cocina Escolar', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 19)),
         centerTitle: true,
         elevation: 0,
-        leading: Builder(
-          builder: (context) => IconButton(
-            icon: const Icon(Icons.menu_rounded),
-            onPressed: () => Scaffold.of(context).openDrawer(),
-          ),
-        ),
-      ),
-      drawer: Drawer(
-        child: ListView(
-          padding: EdgeInsets.zero,
-          children: [
-            DrawerHeader(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [cs.primary, const Color(0xFF8C0000)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(6),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.15),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: _buildAppLogo(size: 48),
-                  ),
-                  const SizedBox(height: 10),
-                  const Text('Menú de Gestión',
-                      style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
-                  const Text('INFRAMEN · Control de Vajilla',
-                      style: TextStyle(color: Colors.white70, fontSize: 12)),
-                ],
-              ),
-            ),
-            ListTile(
-              leading: const Icon(Icons.assignment_return_rounded, color: Color(0xFFB71C1C)),
-              title: const Text('Devolución de Utensilios', style: TextStyle(fontWeight: FontWeight.bold)),
-              subtitle: const Text('Escanear carnet y devolver'),
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const PendientesPage()),
-                );
-              },
-            ),
-            const Divider(),
-          ],
-        ),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
         child: Column(
           children: [
-            // Banner Central con Logo de INFRAMEN
             Card(
               elevation: 0,
               shape: RoundedRectangleBorder(
@@ -272,12 +292,10 @@ class HomePage extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 24),
-            
-            // Sección: Entrega de Alimentos
             const Align(
               alignment: Alignment.centerLeft,
               child: Text(
-                'Entrega de Alimentos',
+                'Categorías Principales',
                 style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
               ),
             ),
@@ -286,62 +304,24 @@ class HomePage extends StatelessWidget {
               children: [
                 Expanded(
                   child: _AccesoCard(
-                    icon: Icons.qr_code_scanner_rounded,
-                    titulo: 'Escanear Retiro',
-                    subtitulo: 'Registrar préstamo',
+                    icon: Icons.restaurant_rounded,
+                    titulo: 'Entrega de Alimentos',
+                    subtitulo: 'Retiros y devoluciones',
                     color: const Color(0xFFB71C1C),
                     onTap: () {
-                      Navigator.push(context, MaterialPageRoute(builder: (_) => const RegistrarPage()));
+                      Navigator.push(context, MaterialPageRoute(builder: (_) => const EntregaModuloPage()));
                     },
                   ),
                 ),
                 const SizedBox(width: 14),
                 Expanded(
                   child: _AccesoCard(
-                    icon: Icons.assignment_return_rounded,
-                    titulo: 'Ver Pendientes',
-                    subtitulo: 'Devolución de vajilla',
-                    color: const Color(0xFF1E293B),
-                    onTap: () {
-                      Navigator.push(context, MaterialPageRoute(builder: (_) => const PendientesPage()));
-                    },
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 24),
-
-            // Sección: Inventario y Reportes
-            const Align(
-              alignment: Alignment.centerLeft,
-              child: Text(
-                'Inventario y Reportes',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
-              ),
-            ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                  child: _AccesoCard(
-                    icon: Icons.pie_chart_rounded,
-                    titulo: 'Estadísticas',
-                    subtitulo: 'Gráficos del día',
-                    color: const Color(0xFF0284C7),
-                    onTap: () {
-                      Navigator.push(context, MaterialPageRoute(builder: (_) => const EstadisticasPage()));
-                    },
-                  ),
-                ),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: _AccesoCard(
-                    icon: Icons.picture_as_pdf_rounded,
-                    titulo: 'Informes',
-                    subtitulo: 'PDF y Excel',
+                    icon: Icons.inventory_2_rounded,
+                    titulo: 'Inventario',
+                    subtitulo: 'Informes y estadísticas',
                     color: const Color(0xFF16A34A),
                     onTap: () {
-                      Navigator.push(context, MaterialPageRoute(builder: (_) => const InformesPage()));
+                      Navigator.push(context, MaterialPageRoute(builder: (_) => const InventarioModuloPage()));
                     },
                   ),
                 ),
