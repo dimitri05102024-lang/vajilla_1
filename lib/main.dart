@@ -5,7 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:fl_chart/fl_chart.dart';
-import 'package:flutter_local_notifications/flutter_local_notifications.dart';[cite: 3]
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 import 'package:excel/excel.dart' as excel_pkg;
@@ -20,7 +20,7 @@ final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin = FlutterL
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Configuración de inicialización para Android (Guía 10)
+  // Configuración de inicialización para Android
   const AndroidInitializationSettings initializationSettingsAndroid =
       AndroidInitializationSettings('@mipmap/ic_launcher');
 
@@ -207,7 +207,7 @@ class EntregaModuloPage extends StatelessWidget {
           _AccesoCard(
             icon: Icons.assignment_return_rounded,
             titulo: 'Ver Pendientes y Devoluciones',
-            subtitulo: 'Consultar vajilla prestada y registrar devolución',
+            subtitulo: 'Seleccionar modo de devolución y escanear carnet',
             color: const Color(0xFF1E293B),
             onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const PendientesPage())),
           ),
@@ -261,9 +261,8 @@ class HomePage extends StatelessWidget {
   const HomePage({super.key});
 
   Widget _buildAppLogo({double size = 85}) {
-    // Uso del logo oficial solicitado (Guía 10)
     return Image.asset(
-      'assets/icon/Logo_IN.PNG',[cite: 4]
+      'assets/icon/Logo_IN.PNG',
       width: size,
       height: size,
       fit: BoxFit.contain,
@@ -508,7 +507,6 @@ class _RegistrarPageState extends State<RegistrarPage> {
 
       if (retResp.statusCode == 200 || retResp.statusCode == 201) {
         _msg('¡Retiro de $_tipo registrado con éxito!');
-        // Envía notificación automática local (Guía 10)
         await mostrarNotificacionLocal(
           'Retiro Registrado',
           'Se registró un préstamo de $_tipo para el carnet $codigo',
@@ -951,6 +949,9 @@ class _ItemLeyenda extends StatelessWidget {
   }
 }
 
+// ==========================================
+// PANTALLA DE PENDIENTES Y DEVOLUCIÓN POR MODO SELECCIONADO
+// ==========================================
 class PendientesPage extends StatefulWidget {
   const PendientesPage({super.key});
 
@@ -962,9 +963,11 @@ class _PendientesPageState extends State<PendientesPage> {
   final _carnetCtrl = TextEditingController();
   List<dynamic> pendientes = [];
   bool _cargando = false;
-  String _categoriaSeleccionada = 'Plato';
+  
+  // Modos de selección múltiple/individual de utensilios a devolver
+  final List<String> _modosSeleccionados = ['Plato']; // Por defecto inicia seleccionando plato
 
-  final List<String> _tipos = const ['Plato', 'Vaso', 'Taza'];
+  final List<String> _tiposDisponibles = const ['Plato', 'Vaso', 'Taza'];
   final Map<String, IconData> _iconoTipo = const {
     'Plato': Icons.dinner_dining,
     'Vaso': Icons.local_drink,
@@ -977,7 +980,7 @@ class _PendientesPageState extends State<PendientesPage> {
     super.dispose();
   }
 
-  void _escanearCarnet() {
+  void _escanearParaDevolver() {
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -986,14 +989,14 @@ class _PendientesPageState extends State<PendientesPage> {
             setState(() {
               _carnetCtrl.text = codigo; 
             });
-            obtenerPendientes();
+            _procesarDevolucionMasivaPorEscaneo(codigo);
           },
         ),
       ),
     );
   }
 
-  Future<void> obtenerPendientes() async {
+  Future<void> _consultarPendientesManual() async {
     final carnet = _carnetCtrl.text.trim();
     if (carnet.isEmpty) return;
     
@@ -1025,35 +1028,90 @@ class _PendientesPageState extends State<PendientesPage> {
     }
   }
 
-  Future<void> _registrarDevolucion(dynamic movimientoId, String tipo) async {
-    if (movimientoId == null) return;
+  // Al escanear el carnet, busca los pendientes del alumno y devuelve automáticamente 
+  // aquellos utensilios que coincidan con los modos seleccionados en pantalla.
+  Future<void> _procesarDevolucionMasivaPorEscaneo(String carnet) async {
+    if (carnet.isEmpty) return;
+    if (_modosSeleccionados.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Selecciona al menos un modo de utensilio a devolver'), backgroundColor: Colors.orange),
+      );
+      return;
+    }
 
+    setState(() => _cargando = true);
     try {
-      final url = Uri.parse('$kBaseUrl/devolucion/$movimientoId');
-      final response = await http.put(url);
+      final url = Uri.parse('$kBaseUrl/pendientes/$carnet');
+      final response = await http.get(url);
+      
+      if (response.statusCode != 200) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Estudiante no encontrado o sin conexión'), backgroundColor: Colors.red),
+        );
+        return;
+      }
 
-      if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      final List<dynamic> listaPendientes = data is List ? data : (data['pendientes'] ?? []);
+
+      if (listaPendientes.isEmpty) {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('¡Devolución de $tipo registrada con éxito!'), backgroundColor: Colors.green.shade800),
+          const SnackBar(content: Text('El estudiante no tiene utensilios pendientes'), backgroundColor: Colors.orange),
         );
-        // Notificación automática local de devolución (Guía 10)
+        setState(() => pendientes = []);
+        return;
+      }
+
+      // Filtramos los pendientes que coincidan con los modos seleccionados (ej: Plato, Vaso, etc.)
+      final aDevolver = listaPendientes.where((item) {
+        final tipoItem = (item['tipo'] ?? '').toString().toLowerCase();
+        return _modosSeleccionados.any((modo) => modo.toLowerCase() == tipoItem);
+      }).toList();
+
+      if (aDevolver.isEmpty) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('El alumno no tiene pendientes de los tipos seleccionados (${_modosSeleccionados.join(", ")})'), backgroundColor: Colors.orange),
+        );
+        setState(() => pendientes = listaPendientes);
+        return;
+      }
+
+      // Procesamos la devolución de cada uno de los elementos encontrados para esos modos
+      int devueltosExitosos = 0;
+      for (var item in aDevolver) {
+        final movimientoId = item['id'];
+        if (movimientoId != null) {
+          final devResp = await http.put(Uri.parse('$kBaseUrl/devolucion/$movimientoId'));
+          if (devResp.statusCode == 200) {
+            devueltosExitosos++;
+          }
+        }
+      }
+
+      if (devueltosExitosos > 0) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('¡Devolución exitosa! Se devolvieron $devueltosExitosos utensilio(s).'), backgroundColor: Colors.green.shade800),
+        );
         await mostrarNotificacionLocal(
-          'Devolución Registrada',
-          'Se ha completado la devolución de $tipo de forma exitosa.',
-        );
-        obtenerPendientes();
-      } else {
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('No se pudo registrar la devolución'), backgroundColor: Colors.red),
+          'Devolución Automática',
+          'Se procesó la devolución de: ${_modosSeleccionados.join(", ")} para el carnet $carnet',
         );
       }
+
+      // Actualizamos la lista restante en pantalla
+      _consultarPendientesManual();
+
     } catch (_) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Error de conexión al intentar devolver'), backgroundColor: Colors.red),
+        const SnackBar(content: Text('Error al procesar la devolución automática'), backgroundColor: Colors.red),
       );
+    } finally {
+      if (mounted) setState(() => _cargando = false);
     }
   }
 
@@ -1061,105 +1119,123 @@ class _PendientesPageState extends State<PendientesPage> {
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
 
-    final pendientesFiltrados = pendientes.where((item) {
-      final tipo = item['tipo'] ?? '';
-      return tipo.toString().toLowerCase() == _categoriaSeleccionada.toLowerCase();
-    }).toList();
-
-    Map<String, int> contadores = {
-      'Plato': pendientes.where((i) => (i['tipo'] ?? '').toString().toLowerCase() == 'plato').length,
-      'Vaso': pendientes.where((i) => (i['tipo'] ?? '').toString().toLowerCase() == 'vaso').length,
-      'Taza': pendientes.where((i) => (i['tipo'] ?? '').toString().toLowerCase() == 'taza').length,
-    };
-
     return Scaffold(
       appBar: AppBar(
         backgroundColor: cs.primary,
         foregroundColor: Colors.white,
-        title: const Text('Devolución de Utensilios', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+        title: const Text('Devolución por Modo Activo', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
         centerTitle: true,
       ),
       body: Padding(
         padding: const EdgeInsets.all(20),
         child: Column(
           children: [
+            const Align(
+              alignment: Alignment.centerLeft,
+              child: Text('1. Selecciona el tipo(s) a devolver:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Color(0xFF1E293B))),
+            ),
+            const SizedBox(height: 10),
+            // Botones de selección múltiple/permanente para el modo de devolución
+            Row(
+              children: _tiposDisponibles.map((tipo) {
+                final seleccionado = _modosSeleccionados.contains(tipo);
+                return Expanded(
+                  child: GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        if (seleccionado) {
+                          // Evitamos deseleccionar todos si al menos debe quedar uno
+                          if (_modosSeleccionados.length > 1) {
+                            _modosSeleccionados.remove(tipo);
+                          }
+                        } else {
+                          _modosSeleccionados.add(tipo);
+                        }
+                      });
+                    },
+                    child: Container(
+                      margin: const EdgeInsets.symmetric(horizontal: 4),
+                      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 6),
+                      decoration: BoxDecoration(
+                        color: seleccionado ? cs.primary : Colors.white,
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(color: seleccionado ? cs.primary : const Color(0xFFE2E8F0)),
+                        boxShadow: seleccionado ? [BoxShadow(color: cs.primary.withOpacity(0.3), blurRadius: 6, offset: const Offset(0, 2))] : [],
+                      ),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(_iconoTipo[tipo], color: seleccionado ? Colors.white : cs.primary, size: 24),
+                          const SizedBox(height: 6),
+                          Text(tipo, style: TextStyle(color: seleccionado ? Colors.white : Colors.black87, fontWeight: FontWeight.bold, fontSize: 12)),
+                          const SizedBox(height: 4),
+                          Icon(
+                            seleccionado ? Icons.check_box_rounded : Icons.box_outlined,
+                            size: 14,
+                            color: seleccionado ? Colors.white70 : Colors.grey,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+            const SizedBox(height: 20),
+            const Align(
+              alignment: Alignment.centerLeft,
+              child: Text('2. Ingresa o escanea el carnet del alumno:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Color(0xFF1E293B))),
+            ),
+            const SizedBox(height: 10),
             TextField(
               controller: _carnetCtrl,
               decoration: InputDecoration(
                 labelText: 'Carnet del Alumno',
                 prefixIcon: const Icon(Icons.badge_outlined),
                 suffixIcon: IconButton(
-                  icon: Icon(Icons.camera_alt, color: cs.primary),
-                  onPressed: _escanearCarnet,
-                  tooltip: 'Escanear Carnet',
+                  icon: Icon(Icons.qr_code_scanner, color: cs.primary, size: 26),
+                  onPressed: _escanearParaDevolver,
+                  tooltip: 'Escanear para devolver automáticamente',
                 ),
               ),
-              onSubmitted: (_) => obtenerPendientes(),
+              onSubmitted: (_) => _consultarPendientesManual(),
             ),
             const SizedBox(height: 12),
-            SizedBox(
-              width: double.infinity,
-              height: 48,
-              child: ElevatedButton.icon(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: cs.primary,
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+            Row(
+              children: [
+                Expanded(
+                  child: ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF1E293B),
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                    onPressed: _consultarPendientesManual,
+                    icon: const Icon(Icons.search_rounded),
+                    label: const Text('Consultar Pendientes'),
+                  ),
                 ),
-                onPressed: obtenerPendientes,
-                icon: const Icon(Icons.search_rounded),
-                label: const Text('Buscar Pendientes del Alumno', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-              ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: cs.primary,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                    onPressed: _escanearParaDevolver,
+                    icon: const Icon(Icons.camera_alt),
+                    label: const Text('Escanear y Devolver'),
+                  ),
+                ),
+              ],
             ),
             const SizedBox(height: 20),
-            if (_carnetCtrl.text.trim().isNotEmpty) ...[
-              const Align(
-                alignment: Alignment.centerLeft,
-                child: Text('Filtrar por categoría:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-              ),
-              const SizedBox(height: 10),
-              Row(
-                children: _tipos.map((tipo) {
-                  final seleccionado = _categoriaSeleccionada == tipo;
-                  final cantidad = contadores[tipo] ?? 0;
-                  return Expanded(
-                    child: GestureDetector(
-                      onTap: () => setState(() => _categoriaSeleccionada = tipo),
-                      child: Container(
-                        margin: const EdgeInsets.symmetric(horizontal: 4),
-                        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 6),
-                        decoration: BoxDecoration(
-                          color: seleccionado ? cs.primary : Colors.white,
-                          borderRadius: BorderRadius.circular(14),
-                          border: Border.all(color: seleccionado ? cs.primary : const Color(0xFFE2E8F0)),
-                        ),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(_iconoTipo[tipo], color: seleccionado ? Colors.white : cs.primary, size: 22),
-                            const SizedBox(height: 4),
-                            Text(tipo, style: TextStyle(color: seleccionado ? Colors.white : Colors.black87, fontWeight: FontWeight.bold, fontSize: 12)),
-                            const SizedBox(height: 2),
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                              decoration: BoxDecoration(
-                                color: seleccionado ? Colors.white.withOpacity(0.2) : Colors.grey.shade100,
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                              child: Text('$cantidad', style: TextStyle(color: seleccionado ? Colors.white : Colors.grey.shade700, fontSize: 10, fontWeight: FontWeight.bold)),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  );
-                }).toList(),
-              ),
-              const SizedBox(height: 15),
-            ],
             const Align(
               alignment: Alignment.centerLeft,
-              child: Text('Utensilios pendientes:', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Color(0xFF1E293B))),
+              child: Text('Utensilios actuales del estudiante:', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Color(0xFF1E293B))),
             ),
             const SizedBox(height: 10),
             Expanded(
@@ -1167,40 +1243,45 @@ class _PendientesPageState extends State<PendientesPage> {
                   ? const Center(child: CircularProgressIndicator())
                   : _carnetCtrl.text.trim().isEmpty
                       ? const Center(
-                          child: Text('Escanea o ingresa un carnet para ver y devolver los utensilios pendientes',
+                          child: Text('Selecciona los utensilios arriba y escanea el carnet para procesar la devolución automáticamente',
                               textAlign: TextAlign.center, style: TextStyle(color: Colors.grey)))
-                      : pendientesFiltrados.isEmpty
-                          ? Center(
-                              child: Text('Este estudiante no tiene $_categoriaSeleccionada(s) pendientes',
-                                  textAlign: TextAlign.center, style: const TextStyle(color: Colors.green, fontWeight: FontWeight.bold)))
+                      : pendientes.isEmpty
+                          ? const Center(
+                              child: Text('Este estudiante no tiene utensilios pendientes registrados',
+                                  textAlign: TextAlign.center, style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold)))
                           : ListView.builder(
-                              itemCount: pendientesFiltrados.length,
+                              itemCount: pendientes.length,
                               itemBuilder: (context, index) {
-                                final item = pendientesFiltrados[index];
+                                final item = pendientes[index];
                                 final tipo = item['tipo'] ?? 'Utensilio';
-                                final movimientoId = item['id'];
                                 final fechaRetiro = item['fecha_retiro'] ?? '';
+                                final esModoActivo = _modosSeleccionados.any((m) => m.toLowerCase() == tipo.toLowerCase());
 
                                 return Card(
-                                  margin: const EdgeInsets.only(bottom: 12),
+                                  margin: const EdgeInsets.only(bottom: 10),
+                                  color: esModoActivo ? const Color(0xFFFFF5F5) : Colors.white,
                                   child: ListTile(
-                                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
                                     leading: CircleAvatar(
-                                      backgroundColor: const Color(0xFFFFEBEE),
-                                      child: Icon(_iconoTipo[tipo] ?? Icons.restaurant, color: const Color(0xFFC62828)),
+                                      backgroundColor: esModoActivo ? const Color(0xFFFFEBEE) : Colors.grey.shade100,
+                                      child: Icon(_iconoTipo[tipo] ?? Icons.restaurant, color: esModoActivo ? const Color(0xFFC62828) : Colors.grey),
                                     ),
-                                    title: Text(tipo, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                                    title: Text(tipo, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: esModoActivo ? Colors.black87 : Colors.grey)),
                                     subtitle: Text('Retirado: $fechaRetiro', style: const TextStyle(fontSize: 12)),
-                                    trailing: ElevatedButton.icon(
-                                      style: ElevatedButton.styleFrom(
-                                        backgroundColor: const Color(0xFF1E293B),
-                                        foregroundColor: Colors.white,
-                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                    trailing: Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                      decoration: BoxDecoration(
+                                        color: esModoActivo ? const Color(0xFF16A34A).withOpacity(0.1) : Colors.grey.withOpacity(0.1),
+                                        borderRadius: BorderRadius.circular(8),
                                       ),
-                                      onPressed: () => _registrarDevolucion(movimientoId, tipo),
-                                      icon: const Icon(Icons.check, size: 16),
-                                      label: const Text('Devolver', style: TextStyle(fontSize: 12)),
+                                      child: Text(
+                                        esModoActivo ? 'A devolver' : 'Fuera de modo',
+                                        style: TextStyle(
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.bold,
+                                          color: esModoActivo ? const Color(0xFF16A34A) : Colors.grey,
+                                        ),
+                                      ),
                                     ),
                                   ),
                                 );
@@ -1658,7 +1739,7 @@ class ConfiguracionPage extends StatelessWidget {
                 ListTile(
                   leading: Icon(Icons.info_outline, color: Color(0xFFB71C1C)),
                   title: Text('Versión de la App'),
-                  subtitle: Text('1.0.0+1 (Con Notificaciones Locales)'),
+                  subtitle: Text('1.0.0+2 (Devolución por Modo Activo)'),
                 ),
               ],
             ),
