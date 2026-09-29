@@ -21,7 +21,7 @@ dependencies:
   # Librerías para exportación y guardado local en el teléfono (Guía 8)
   pdf: ^3.10.7                  # Generación de PDF[cite: 2]
   printing: ^5.12.0             # Impresión y visor PDF[cite: 2]
-  excel: ^2.0.0                 # Generación de Excel[cite: 2]
+  excel: ^4.0.0               # Generación de Excel[cite: 2]
   path_provider: ^2.1.2         # Rutas de almacenamiento local
   open_file_plus: ^3.4.1        # Abrir/guardar archivos en el teléfono
 
