@@ -5,7 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:fl_chart/fl_chart.dart';
-import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';[cite: 3]
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 import 'package:excel/excel.dart' as excel_pkg;
@@ -20,7 +20,7 @@ final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin = FlutterL
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Configuración de inicialización para Android
+  // Configuración de inicialización para Android (Guía 10)
   const AndroidInitializationSettings initializationSettingsAndroid =
       AndroidInitializationSettings('@mipmap/ic_launcher');
 
@@ -261,8 +261,9 @@ class HomePage extends StatelessWidget {
   const HomePage({super.key});
 
   Widget _buildAppLogo({double size = 85}) {
+    // Uso del logo oficial solicitado (Guía 10)
     return Image.asset(
-      'assets/icon/Logo_IN.PNG',
+      'assets/icon/Logo_IN.PNG',[cite: 4]
       width: size,
       height: size,
       fit: BoxFit.contain,
@@ -507,6 +508,7 @@ class _RegistrarPageState extends State<RegistrarPage> {
 
       if (retResp.statusCode == 200 || retResp.statusCode == 201) {
         _msg('¡Retiro de $_tipo registrado con éxito!');
+        // Envía notificación automática local (Guía 10)
         await mostrarNotificacionLocal(
           'Retiro Registrado',
           'Se registró un préstamo de $_tipo para el carnet $codigo',
@@ -1035,6 +1037,7 @@ class _PendientesPageState extends State<PendientesPage> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('¡Devolución de $tipo registrada con éxito!'), backgroundColor: Colors.green.shade800),
         );
+        // Notificación automática local de devolución (Guía 10)
         await mostrarNotificacionLocal(
           'Devolución Registrada',
           'Se ha completado la devolución de $tipo de forma exitosa.',
