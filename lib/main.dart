@@ -82,7 +82,7 @@ void mostrarNotificacionApp(String titulo, String cuerpo, {bool esError = false}
       backgroundColor: esError ? const Color(0xFFDC2626) : const Color(0xFF0F172A),
       behavior: SnackBarBehavior.floating,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      margin: const EdgeInsets.fromLTRB(16, 10, 16, 0), // Aparece arriba simulando notificación push
+      margin: const EdgeInsets.fromLTRB(16, 10, 16, 0),
       elevation: 6,
       duration: const Duration(seconds: 4),
     ),
@@ -355,8 +355,8 @@ class HomePage extends StatelessWidget {
                 width: double.infinity,
                 padding: const EdgeInsets.symmetric(vertical: 28, horizontal: 20),
                 decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [Colors.white, const Color(0xFFFFF5F5)],
+                  gradient: const LinearGradient(
+                    colors: [Colors.white, Color(0xFFFFF5F5)],
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
                   ),
@@ -489,7 +489,7 @@ class _AccesoCard extends StatelessWidget {
 }
 
 // ==========================================
-// PANTALLA: REGISTRAR RETIRO (CON MODO AUTOMÁTICO/MANUAL)
+// PANTALLA: REGISTRAR RETIRO
 // ==========================================
 class RegistrarPage extends StatefulWidget {
   const RegistrarPage({super.key});
@@ -502,7 +502,7 @@ class _RegistrarPageState extends State<RegistrarPage> {
   final _carnetCtrl = TextEditingController();
   String _tipo = 'Plato';
   bool _cargando = false;
-  bool _autoGuardado = true; // Interruptor para autoguardado al escanear
+  bool _autoGuardado = true;
 
   final _tipos = const ['Plato', 'Vaso', 'Taza'];
   final _iconoTipo = const {
@@ -524,7 +524,6 @@ class _RegistrarPageState extends State<RegistrarPage> {
         builder: (context) => EscaneoPage(
           onCodigoEscaneado: (codigo) {
             setState(() => _carnetCtrl.text = codigo);
-            // Si el modo automático está activo, procesa de inmediato al escanear
             if (_autoGuardado) {
               _procesarRetiro(codigo);
             } else {
@@ -632,7 +631,6 @@ class _RegistrarPageState extends State<RegistrarPage> {
                 const SizedBox(height: 6),
                 const Text('Escanea el carnet o ingresa el código del alumno.', style: TextStyle(color: Colors.grey, fontSize: 13)),
                 const SizedBox(height: 16),
-                // Interruptor para alternar Modo Automático o Manual al escanear
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                   decoration: BoxDecoration(
@@ -641,7 +639,7 @@ class _RegistrarPageState extends State<RegistrarPage> {
                     border: Border.all(color: const Color(0xFFE2E8F0)),
                   ),
                   child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween, // CORREGIDO AQUÍ (Era .between)
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Row(
                         children: [
@@ -1043,7 +1041,7 @@ class _ItemLeyenda extends StatelessWidget {
 }
 
 // ==========================================
-// PANTALLA: DEVOLUCIÓN DE PENDIENTES (FILTRA SOLO DEL DÍA ACTUAL)
+// PANTALLA: DEVOLUCIÓN DE PENDIENTES
 // ==========================================
 class PendientesPage extends StatefulWidget {
   const PendientesPage({super.key});
@@ -1056,6 +1054,7 @@ class _PendientesPageState extends State<PendientesPage> {
   final _carnetCtrl = TextEditingController();
   List<dynamic> pendientes = [];
   bool _cargando = false;
+  bool _autoDevolucion = true; // Interruptor para autodevolución al escanear
   
   final List<String> _modosSeleccionados = ['Plato']; 
   final List<String> _tiposDisponibles = const ['Plato', 'Vaso', 'Taza'];
@@ -1080,7 +1079,13 @@ class _PendientesPageState extends State<PendientesPage> {
             setState(() {
               _carnetCtrl.text = codigo; 
             });
-            _procesarDevolucionMasivaPorEscaneo(codigo);
+            // Si el modo automático de devolución está activo, realiza la devolución y consulta de inmediato
+            if (_autoDevolucion) {
+              _procesarDevolucionMasivaPorEscaneo(codigo);
+            } else {
+              _consultarPendientesManual();
+              mostrarNotificacionApp('Código Capturado', 'Carnet $codigo listo. Presiona consultar o realiza la acción deseada.');
+            }
           },
         ),
       ),
@@ -1100,8 +1105,7 @@ class _PendientesPageState extends State<PendientesPage> {
         final data = jsonDecode(response.body);
         final List<dynamic> listaCruda = data is List ? data : (data['pendientes'] ?? []);
         
-        // Filtro estricto: Solo se muestran los pendientes prestados el día de HOY
-        final hoyStr = DateTime.now().toString().split(' ')[0]; // Formato YYYY-MM-DD
+        final hoyStr = DateTime.now().toString().split(' ')[0];
         final listaDeHoy = listaCruda.where((item) {
           final fechaRetiro = (item['fecha_retiro'] ?? '').toString();
           return fechaRetiro.startsWith(hoyStr);
@@ -1122,7 +1126,6 @@ class _PendientesPageState extends State<PendientesPage> {
     }
   }
 
-  // Escaneo y devolución automática restringida EXCLUSIVAMENTE a los préstamos de HOY
   Future<void> _procesarDevolucionMasivaPorEscaneo(String carnet) async {
     if (carnet.isEmpty) return;
     if (_modosSeleccionados.isEmpty) {
@@ -1149,7 +1152,6 @@ class _PendientesPageState extends State<PendientesPage> {
         return;
       }
 
-      // Filtrar únicamente los del día de HOY
       final hoyStr = DateTime.now().toString().split(' ')[0];
       final pendientesDeHoy = listaCruda.where((item) {
         final fechaRetiro = (item['fecha_retiro'] ?? '').toString();
@@ -1157,24 +1159,22 @@ class _PendientesPageState extends State<PendientesPage> {
       }).toList();
 
       if (pendientesDeHoy.isEmpty) {
-        mostrarNotificacionApp('Aviso', 'El alumno no tiene préstamos pendientes del día de hoy (los anteriores no aplican)', esError: true);
+        mostrarNotificacionApp('Aviso', 'El alumno no tiene préstamos pendientes del día de hoy', esError: true);
         setState(() => pendientes = []);
         return;
       }
 
-      // Filtrar por los modos seleccionados en pantalla
       final aDevolver = pendientesDeHoy.where((item) {
         final tipoItem = (item['tipo'] ?? '').toString().toLowerCase();
         return _modosSeleccionados.any((modo) => modo.toLowerCase() == tipoItem);
       }).toList();
 
       if (aDevolver.isEmpty) {
-        mostrarNotificacionApp('Aviso', 'No hay pendientes de hoy para los modos seleccionados (${_modosSeleccionados.join(", ")})', esError: true);
+        mostrarNotificacionApp('Aviso', 'No hay pendientes de hoy para los modos seleccionados', esError: true);
         setState(() => pendientes = pendientesDeHoy);
         return;
       }
 
-      // Procesar la devolución de cada uno de los elementos de hoy
       int devueltosExitosos = 0;
       for (var item in aDevolver) {
         final movimientoId = item['id'];
@@ -1194,7 +1194,6 @@ class _PendientesPageState extends State<PendientesPage> {
         );
       }
 
-      // Actualizar vista restante
       _consultarPendientesManual();
 
     } catch (_) {
@@ -1268,7 +1267,44 @@ class _PendientesPageState extends State<PendientesPage> {
                 );
               }).toList(),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 16),
+            // Interruptor para alternar Devolución Automática vs Solo Capturar NIE al escanear
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF1F5F9),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: const Color(0xFFE2E8F0)),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Row(
+                    children: [
+                      Icon(
+                        _autoDevolucion ? Icons.bolt_rounded : Icons.touch_app_rounded,
+                        color: _autoDevolucion ? const Color(0xFF16A34A) : Colors.grey,
+                        size: 22,
+                      ),
+                      const SizedBox(width: 10),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text('Devolución automática al escanear', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xFF1E293B))),
+                          Text(_autoDevolucion ? 'Devuelve al instante al escanear' : 'Solo captura el NIE en el buscador', style: const TextStyle(fontSize: 11, color: Color(0xFF64748B))),
+                        ],
+                      ),
+                    ],
+                  ),
+                  Switch(
+                    value: _autoDevolucion,
+                    activeColor: const Color(0xFF16A34A),
+                    onChanged: (val) => setState(() => _autoDevolucion = val),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
             const Align(
               alignment: Alignment.centerLeft,
               child: Text('2. Ingresa o escanea el carnet del alumno:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Color(0xFF1E293B))),
@@ -1282,7 +1318,7 @@ class _PendientesPageState extends State<PendientesPage> {
                 suffixIcon: IconButton(
                   icon: Icon(Icons.qr_code_scanner, color: cs.primary, size: 26),
                   onPressed: _escanearParaDevolver,
-                  tooltip: 'Escanear para devolver automáticamente',
+                  tooltip: 'Escanear carnet',
                 ),
               ),
               onSubmitted: (_) => _consultarPendientesManual(),
@@ -1314,7 +1350,7 @@ class _PendientesPageState extends State<PendientesPage> {
                     ),
                     onPressed: _escanearParaDevolver,
                     icon: const Icon(Icons.camera_alt),
-                    label: const Text('Escanear y Devolver'),
+                    label: const Text('Escanear / Devolver'),
                   ),
                 ),
               ],
@@ -1805,7 +1841,7 @@ class ConfiguracionPage extends StatelessWidget {
                 ListTile(
                   leading: Icon(Icons.info_outline, color: Color(0xFFB71C1C)),
                   title: Text('Versión de la App'),
-                  subtitle: Text('1.1.0 (Notificaciones Top y Devolución del Día)'),
+                  subtitle: Text('1.1.1 (Devolución Automática configurable)'),
                 ),
               ],
             ),
