@@ -660,14 +660,14 @@ class _EstadisticasPageState extends State<EstadisticasPage> {
   }
 
   Widget _buildLeyenda() {
-    return Row(
+    return const Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        _ItemLeyenda(color: const Color(0xFF1E88E5), texto: 'Platos'),
-        const SizedBox(width: 15),
-        _ItemLeyenda(color: const Color(0xFFFB8C00), texto: 'Vasos'),
-        const SizedBox(width: 15),
-        _ItemLeyenda(color: const Color(0xFFE53935), texto: 'Tazas'),
+        _ItemLeyenda(color: Color(0xFF1E88E5), texto: 'Platos'),
+        SizedBox(width: 15),
+        _ItemLeyenda(color: Color(0xFFFB8C00), texto: 'Vasos'),
+        SizedBox(width: 15),
+        _ItemLeyenda(color: Color(0xFFE53935), texto: 'Tazas'),
       ],
     );
   }
@@ -1163,7 +1163,7 @@ class _RegistrarEstudiantePageState extends State<RegistrarEstudiantePage> {
                 const SizedBox(height: 15),
                 TextField(
                   controller: _gradoCtrl,
-                  decoration: const InputDecoration(labelText: 'Grado / Seccion (Ej: 2° Software)', prefixIcon: Icon(Icons.school_outlined)),
+                  decoration: const InputDecoration(labelText: 'Grado / Sección (Ej: 2° Software)', prefixIcon: Icon(Icons.school_outlined)),
                 ),
                 const SizedBox(height: 25),
                 SizedBox(
@@ -1332,7 +1332,7 @@ class _InformesPageState extends State<InformesPage> {
             action: SnackBarAction(
               label: 'ABRIR',
               textColor: Colors.white,
-              onPressed: () => OpenFile.open(path),
+              onPressed: () => OpenFilePlus.open(path),
             ),
           ),
         );
@@ -1477,12 +1477,12 @@ class ConfiguracionPage extends StatelessWidget {
         children: [
           const Text('Conexión con el Servidor', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey)),
           const SizedBox(height: 10),
-          Card(
+          const Card(
             child: ListTile(
-              leading: const Icon(Icons.dns_rounded, color: Color(0xFFB71C1C)),
-              title: const Text('URL Base del Backend'),
-              subtitle: const Text(kBaseUrl),
-              trailing: const Icon(Icons.check_circle, color: Colors.green),
+              leading: Icon(Icons.dns_rounded, color: Color(0xFFB71C1C)),
+              title: Text('URL Base del Backend'),
+              subtitle: Text(kBaseUrl),
+              trailing: Icon(Icons.check_circle, color: Colors.green),
             ),
           ),
           const SizedBox(height: 20),
