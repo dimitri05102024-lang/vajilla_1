@@ -76,12 +76,12 @@ class MainNavigatorPage extends StatefulWidget {
 class _MainNavigatorPageState extends State<MainNavigatorPage> {
   int _currentIndex = 0;
 
-  final List<Widget> _pages = [
-    const HomePage(),
-    const RegistrarPage(),
-    const EstadisticasPage(),
-    const InformesPage(),
-    const ConfiguracionPage(),
+  final List<Widget> _pages = const [
+    HomePage(),
+    RegistrarPage(),
+    EstadisticasPage(),
+    InformesPage(),
+    ConfiguracionPage(),
   ];
 
   @override
@@ -146,20 +146,20 @@ class _MainNavigatorPageState extends State<MainNavigatorPage> {
 }
 
 // ==========================================
-// 1. PÁGINA DE INICIO (Con Logo Institucional)
+// 1. PÁGINA DE INICIO
 // ==========================================
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
 
   Widget _buildAppLogo({double size = 45}) {
     return Image.asset(
-      'assets/icon/Logo_IN.PNG', // Carga del logo de app[cite: 3]
+      'assets/icon/Logo_IN.PNG',
       width: size,
       height: size,
       fit: BoxFit.contain,
       errorBuilder: (context, error, stackTrace) {
         return Image.asset(
-          'assets/icon/logo.png', // Fallback si existe
+          'assets/icon/logo.png',
           width: size,
           height: size,
           fit: BoxFit.contain,
@@ -389,7 +389,14 @@ class _RegistrarPageState extends State<RegistrarPage> {
     'Taza': Icons.coffee,
   };
 
+  @override
+  void dispose() {
+    _carnetCtrl.dispose();
+    super.dispose();
+  }
+
   void _msg(String texto, {bool error = false}) {
+    if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(texto),
@@ -562,7 +569,7 @@ class _RegistrarPageState extends State<RegistrarPage> {
 }
 
 // ==========================================
-// 3. PÁGINA DE ESTADÍSTICAS (Gráficas de Pastel Mejoradas)
+// 3. PÁGINA DE ESTADÍSTICAS
 // ==========================================
 class EstadisticasPage extends StatefulWidget {
   const EstadisticasPage({super.key});
@@ -828,6 +835,12 @@ class _PendientesPageState extends State<PendientesPage> {
     'Taza': Icons.coffee,
   };
 
+  @override
+  void dispose() {
+    _carnetCtrl.dispose();
+    super.dispose();
+  }
+
   void _escanearCarnet() {
     Navigator.push(
       context,
@@ -909,7 +922,7 @@ class _PendientesPageState extends State<PendientesPage> {
 
     final pendientesFiltrados = pendientes.where((item) {
       final tipo = item['tipo'] ?? '';
-      return tipo.toLowerCase() == _categoriaSeleccionada.toLowerCase();
+      return tipo.toString().toLowerCase() == _categoriaSeleccionada.toLowerCase();
     }).toList();
 
     Map<String, int> contadores = {
@@ -1085,7 +1098,17 @@ class _RegistrarEstudiantePageState extends State<RegistrarEstudiantePage> {
     _carnetCtrl.text = widget.codigoInicial;
   }
 
+  @override
+  void dispose() {
+    _codigoCtrl.dispose();
+    _nombreCtrl.dispose();
+    _carnetCtrl.dispose();
+    _gradoCtrl.dispose();
+    super.dispose();
+  }
+
   void _msg(String texto, {bool error = false}) {
+    if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(texto),
@@ -1189,7 +1212,7 @@ class _RegistrarEstudiantePageState extends State<RegistrarEstudiantePage> {
 }
 
 // ==========================================
-// 6. PÁGINA DE INFORMES Y EXPORTACIÓN (Guía 8 - Guardado en Teléfono)
+// 6. PÁGINA DE INFORMES Y EXPORTACIÓN
 // ==========================================
 class InformesPage extends StatefulWidget {
   const InformesPage({super.key});
@@ -1215,6 +1238,12 @@ class _InformesPageState extends State<InformesPage> {
     _fechaController.text = DateTime.now().toString().split(' ')[0];
   }
 
+  @override
+  void dispose() {
+    _fechaController.dispose();
+    super.dispose();
+  }
+
   Future<void> _seleccionarFecha(BuildContext context) async {
     DateTime? fechaSeleccionada = await showDatePicker(
       context: context,
@@ -1237,7 +1266,7 @@ class _InformesPageState extends State<InformesPage> {
 
     setState(() => _cargando = true);
     try {
-      final url = Uri.parse('$kBaseUrl/informe/$fecha'); // Reutiliza endpoint /informe/:fecha[cite: 2]
+      final url = Uri.parse('$kBaseUrl/informe/$fecha');
       final response = await http.get(url);
       
       if (response.statusCode == 200) {
@@ -1255,7 +1284,6 @@ class _InformesPageState extends State<InformesPage> {
     }
   }
 
-  // EXPORTAR Y GUARDAR PDF EN EL TELÉFONO[cite: 2]
   Future<void> _exportarPDF() async {
     if (_informe.isEmpty) return;
 
@@ -1265,13 +1293,13 @@ class _InformesPageState extends State<InformesPage> {
     pdf.addPage(
       pw.Page(
         build: (pw.Context context) => pw.Column(
-          crossAxisAlignment: pw.CrossAxisAlignment.start,
+          cross: pw.CrossAxisAlignment.start,
           children: [
             pw.Text("Informe Diario - Cocina Escolar INFRAMEN", style: pw.TextStyle(fontSize: 20, fontWeight: pw.FontWeight.bold)),
             pw.SizedBox(height: 6),
             pw.Text("Fecha del reporte: $fecha", style: const pw.TextStyle(fontSize: 12)),
             pw.SizedBox(height: 20),
-            pw.Table.fromTextArray(
+            pw.TableHelper.fromTextArray(
               headers: ['Utensilio', 'Entregados', 'Devueltos', 'Pendientes'],
               data: _informe.map((item) => [
                 item['tipo'].toString(),
@@ -1285,14 +1313,12 @@ class _InformesPageState extends State<InformesPage> {
       ),
     );
 
-    // Permite guardar e imprimir el PDF en el teléfono directamente[cite: 2]
     await Printing.layoutPdf(
       onLayout: (format) async => pdf.save(),
       name: 'informe_cocina_$fecha.pdf',
     );
   }
 
-  // EXPORTAR Y GUARDAR EXCEL (.XLSX) EN EL TELÉFONO[cite: 2]
   Future<void> _exportarExcel() async {
     if (_informe.isEmpty) return;
 
@@ -1397,7 +1423,7 @@ class _InformesPageState extends State<InformesPage> {
                       padding: const EdgeInsets.symmetric(vertical: 12),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     ),
-                    onPressed: _informe.isEmpty ? null : _exportarPDF, // Exportar a PDF[cite: 2]
+                    onPressed: _informe.isEmpty ? null : _exportarPDF,
                     icon: const Icon(Icons.picture_as_pdf),
                     label: const Text('Exportar PDF'),
                   ),
@@ -1411,7 +1437,7 @@ class _InformesPageState extends State<InformesPage> {
                       padding: const EdgeInsets.symmetric(vertical: 12),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     ),
-                    onPressed: _informe.isEmpty ? null : _exportarExcel, // Exportar a Excel[cite: 2]
+                    onPressed: _informe.isEmpty ? null : _exportarExcel,
                     icon: const Icon(Icons.table_chart),
                     label: const Text('Exportar Excel'),
                   ),
@@ -1474,10 +1500,10 @@ class ConfiguracionPage extends StatelessWidget {
       ),
       body: ListView(
         padding: const EdgeInsets.all(20),
-        children: [
-          const Text('Conexión con el Servidor', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey)),
-          const SizedBox(height: 10),
-          const Card(
+        children: const [
+          Text('Conexión con el Servidor', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey)),
+          SizedBox(height: 10),
+          Card(
             child: ListTile(
               leading: Icon(Icons.dns_rounded, color: Color(0xFFB71C1C)),
               title: Text('URL Base del Backend'),
@@ -1485,10 +1511,10 @@ class ConfiguracionPage extends StatelessWidget {
               trailing: Icon(Icons.check_circle, color: Colors.green),
             ),
           ),
-          const SizedBox(height: 20),
-          const Text('Información del Sistema', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey)),
-          const SizedBox(height: 10),
-          const Card(
+          SizedBox(height: 20),
+          Text('Información del Sistema', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey)),
+          SizedBox(height: 10),
+          Card(
             child: Column(
               children: [
                 ListTile(
