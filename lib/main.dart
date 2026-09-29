@@ -14,93 +14,222 @@ import 'package:open_file_plus/open_file_plus.dart';
 
 const String kBaseUrl = 'http://10.198.197.181:3000';
 
-// Servicio Global de Notificaciones Locales
-final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
+// ─────────────────────────────────────────────
+// PALETA DE DISEÑO PREMIUM
+// ─────────────────────────────────────────────
+const kPrimary     = Color(0xFFC0392B); // rojo INFRAMEN
+const kPrimaryDark = Color(0xFF96281B);
+const kPrimaryDeep = Color(0xFF0F172A); // casi negro slate
+const kSurface     = Color(0xFFFFFFFF);
+const kBackground  = Color(0xFFF1F4F8);
+const kBorder      = Color(0xFFE4EAF2);
+const kTextMain    = Color(0xFF0F172A);
+const kTextSub     = Color(0xFF64748B);
+const kGreen       = Color(0xFF16A34A);
+const kBlue        = Color(0xFF2563EB);
+const kAmber       = Color(0xFFD97706);
+
+// ─────────────────────────────────────────────
+// SOMBRAS GLOBALES
+// ─────────────────────────────────────────────
+const kShadowSoft = [
+  BoxShadow(color: Color(0x0D000000), blurRadius: 12, offset: Offset(0, 4)),
+  BoxShadow(color: Color(0x08000000), blurRadius: 2,  offset: Offset(0, 1)),
+];
+
+const kShadowMedium = [
+  BoxShadow(color: Color(0x18000000), blurRadius: 24, offset: Offset(0, 8)),
+  BoxShadow(color: Color(0x0A000000), blurRadius: 4,  offset: Offset(0, 2)),
+];
+
+// ─────────────────────────────────────────────
+// NOTIFICACIONES
+// ─────────────────────────────────────────────
+final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
+    FlutterLocalNotificationsPlugin();
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-
-  const AndroidInitializationSettings initializationSettingsAndroid =
+  const AndroidInitializationSettings initAndroid =
       AndroidInitializationSettings('@mipmap/ic_launcher');
-
-  const InitializationSettings initializationSettings = InitializationSettings(
-    android: initializationSettingsAndroid,
+  await flutterLocalNotificationsPlugin.initialize(
+    const InitializationSettings(android: initAndroid),
   );
-
-  await flutterLocalNotificationsPlugin.initialize(initializationSettings);
   runApp(const CocinaEscolarApp());
 }
 
-// ---------------------------------------------------------------------------
-// SISTEMA DE NOTIFICACIÓN FLOTANTE SUPERIOR (Diseño Premium Superior)
-// ---------------------------------------------------------------------------
-void mostrarNotificacionApp(String titulo, String cuerpo, {bool esError = false}) {
+OverlayEntry? _notifActiva;
+
+void mostrarNotificacionApp(String titulo, String cuerpo,
+    {bool esError = false}) {
   final context = navigatorKey.currentContext;
   if (context == null) return;
 
-  ScaffoldMessenger.of(context).removeCurrentSnackBar();
-  ScaffoldMessenger.of(context).showSnackBar(
-    SnackBar(
-      content: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.18),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(
-              esError ? Icons.warning_amber_rounded : Icons.verified_rounded,
-              color: Colors.white,
-              size: 26,
-            ),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  titulo,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w700,
-                    fontSize: 15,
-                    color: Colors.white,
-                    letterSpacing: 0.2,
-                  ),
-                ),
-                const SizedBox(height: 3),
-                Text(
-                  cuerpo,
-                  style: const TextStyle(fontSize: 12.5, color: Colors.white70, height: 1.2),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-      backgroundColor: esError ? const Color(0xFFE53935) : const Color(0xFF0F172A),
-      behavior: SnackBarBehavior.floating,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-      // Forzamos la posición en la parte superior con un margen superior destacado
-      margin: EdgeInsets.only(
-        top: MediaQuery.of(context).padding.top + 12,
-        left: 16,
-        right: 16,
-      ),
-      elevation: 8,
-      duration: const Duration(seconds: 4),
+  // Elimina la notificación anterior si sigue visible
+  _notifActiva?.remove();
+  _notifActiva = null;
+
+  final overlay = Overlay.of(context, rootOverlay: true);
+  final topPadding = MediaQuery.of(context).padding.top;
+  final bgColor = esError ? const Color(0xFFDC2626) : kPrimaryDeep;
+
+  late OverlayEntry entry;
+  entry = OverlayEntry(
+    builder: (_) => _TopNotification(
+      titulo: titulo,
+      cuerpo: cuerpo,
+      bgColor: bgColor,
+      esError: esError,
+      topPadding: topPadding,
+      onDismiss: () {
+        entry.remove();
+        if (_notifActiva == entry) _notifActiva = null;
+      },
     ),
   );
+
+  _notifActiva = entry;
+  overlay.insert(entry);
+}
+
+/// Widget animado que aparece desde arriba y desaparece tras 4 s
+class _TopNotification extends StatefulWidget {
+  final String titulo;
+  final String cuerpo;
+  final Color bgColor;
+  final bool esError;
+  final double topPadding;
+  final VoidCallback onDismiss;
+
+  const _TopNotification({
+    required this.titulo,
+    required this.cuerpo,
+    required this.bgColor,
+    required this.esError,
+    required this.topPadding,
+    required this.onDismiss,
+  });
+
+  @override
+  State<_TopNotification> createState() => _TopNotificationState();
+}
+
+class _TopNotificationState extends State<_TopNotification>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _ctrl;
+  late Animation<Offset> _slide;
+  late Animation<double> _fade;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(
+        vsync: this, duration: const Duration(milliseconds: 320));
+    _slide = Tween<Offset>(
+      begin: const Offset(0, -1),
+      end: Offset.zero,
+    ).animate(CurvedAnimation(parent: _ctrl, curve: Curves.easeOutCubic));
+    _fade = CurvedAnimation(parent: _ctrl, curve: Curves.easeOut);
+
+    _ctrl.forward();
+
+    // Auto-dismiss tras 4 segundos
+    Future.delayed(const Duration(seconds: 4), _dismiss);
+  }
+
+  void _dismiss() async {
+    if (!mounted) return;
+    await _ctrl.reverse();
+    widget.onDismiss();
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Positioned(
+      top: widget.topPadding + 10,
+      left: 14,
+      right: 14,
+      child: SlideTransition(
+        position: _slide,
+        child: FadeTransition(
+          opacity: _fade,
+          child: Material(
+            color: Colors.transparent,
+            child: GestureDetector(
+              onTap: _dismiss,
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 16, vertical: 14),
+                decoration: BoxDecoration(
+                  color: widget.bgColor,
+                  borderRadius: BorderRadius.circular(18),
+                  boxShadow: const [
+                    BoxShadow(
+                        color: Color(0x33000000),
+                        blurRadius: 20,
+                        offset: Offset(0, 6)),
+                  ],
+                ),
+                child: Row(children: [
+                  Container(
+                    padding: const EdgeInsets.all(9),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.18),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      widget.esError
+                          ? Icons.warning_amber_rounded
+                          : Icons.verified_rounded,
+                      color: Colors.white,
+                      size: 22,
+                    ),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(widget.titulo,
+                            style: const TextStyle(
+                                fontWeight: FontWeight.w700,
+                                fontSize: 14,
+                                color: Colors.white,
+                                letterSpacing: 0.1)),
+                        const SizedBox(height: 3),
+                        Text(widget.cuerpo,
+                            style: const TextStyle(
+                                fontSize: 12,
+                                color: Colors.white70,
+                                height: 1.3),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Icon(Icons.close_rounded,
+                      color: Colors.white.withOpacity(0.6), size: 18),
+                ]),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 Future<void> mostrarNotificacionLocal(String titulo, String cuerpo) async {
-  const AndroidNotificationDetails androidPlatformChannelSpecifics =
-      AndroidNotificationDetails(
+  const AndroidNotificationDetails android = AndroidNotificationDetails(
     'canal_cafetin_inframen',
     'Notificaciones Cafetín',
     channelDescription: 'Avisos en tiempo real sobre retiros y devoluciones',
@@ -108,24 +237,22 @@ Future<void> mostrarNotificacionLocal(String titulo, String cuerpo) async {
     priority: Priority.high,
     showWhen: true,
   );
-
-  const NotificationDetails platformChannelSpecifics =
-      NotificationDetails(android: androidPlatformChannelSpecifics);
-
   await flutterLocalNotificationsPlugin.show(
     DateTime.now().millisecond,
     titulo,
     cuerpo,
-    platformChannelSpecifics,
+    const NotificationDetails(android: android),
   );
 }
 
+// ─────────────────────────────────────────────
+// APP ROOT
+// ─────────────────────────────────────────────
 class CocinaEscolarApp extends StatelessWidget {
   const CocinaEscolarApp({super.key});
 
   @override
   Widget build(BuildContext context) {
-    const seed = Color(0xFFB71C1C);
     return MaterialApp(
       navigatorKey: navigatorKey,
       title: 'Cocina Escolar INFRAMEN',
@@ -133,37 +260,71 @@ class CocinaEscolarApp extends StatelessWidget {
       theme: ThemeData(
         useMaterial3: true,
         colorScheme: ColorScheme.fromSeed(
-          seedColor: seed,
-          primary: const Color(0xFFB71C1C),
-          secondary: const Color(0xFFE53935),
-          surface: Colors.white,
+          seedColor: kPrimary,
+          primary: kPrimary,
+          secondary: kPrimaryDark,
+          surface: kSurface,
         ),
-        textTheme: GoogleFonts.poppinsTextTheme(),
-        scaffoldBackgroundColor: const Color(0xFFF4F6F9),
+        textTheme: GoogleFonts.interTextTheme(),
+        scaffoldBackgroundColor: kBackground,
         cardTheme: CardTheme(
           elevation: 0,
-          color: Colors.white,
+          color: kSurface,
+          margin: EdgeInsets.zero,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(22),
-            side: const BorderSide(color: Color(0xFFE2E8F0), width: 1),
+            borderRadius: BorderRadius.circular(20),
+            side: const BorderSide(color: kBorder, width: 1),
+          ),
+        ),
+        appBarTheme: const AppBarTheme(
+          backgroundColor: kPrimary,
+          foregroundColor: Colors.white,
+          elevation: 0,
+          centerTitle: true,
+          titleTextStyle: TextStyle(
+            fontWeight: FontWeight.w700,
+            fontSize: 17,
+            letterSpacing: -0.3,
+            color: Colors.white,
           ),
         ),
         inputDecorationTheme: InputDecorationTheme(
           filled: true,
-          fillColor: Colors.white,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+          fillColor: kSurface,
+          contentPadding:
+              const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
           border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(14),
             borderSide: BorderSide.none,
           ),
           enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(16),
-            borderSide: const BorderSide(color: Color(0xFFE2E8F0), width: 1),
+            borderRadius: BorderRadius.circular(14),
+            borderSide: const BorderSide(color: kBorder, width: 1),
           ),
           focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(16),
-            borderSide: const BorderSide(color: Color(0xFFB71C1C), width: 1.8),
+            borderRadius: BorderRadius.circular(14),
+            borderSide: const BorderSide(color: kPrimary, width: 1.8),
           ),
+          labelStyle: const TextStyle(color: kTextSub, fontSize: 14),
+          prefixIconColor: kTextSub,
+        ),
+        elevatedButtonTheme: ElevatedButtonThemeData(
+          style: ElevatedButton.styleFrom(
+            backgroundColor: kPrimary,
+            foregroundColor: Colors.white,
+            elevation: 0,
+            shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14)),
+            textStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
+          ),
+        ),
+        switchTheme: SwitchThemeData(
+          thumbColor: WidgetStateProperty.resolveWith(
+              (s) => s.contains(WidgetState.selected) ? kGreen : Colors.white),
+          trackColor: WidgetStateProperty.resolveWith(
+              (s) => s.contains(WidgetState.selected)
+                  ? kGreen.withOpacity(0.35)
+                  : const Color(0xFFCBD5E1)),
         ),
       ),
       home: const HomePage(),
@@ -171,246 +332,395 @@ class CocinaEscolarApp extends StatelessWidget {
   }
 }
 
-// ==========================================
-// MÓDULO 1: ENTREGA DE ALIMENTOS
-// ==========================================
-class EntregaModuloPage extends StatelessWidget {
-  const EntregaModuloPage({super.key});
+// ─────────────────────────────────────────────
+// COMPONENTES COMPARTIDOS
+// ─────────────────────────────────────────────
 
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    return Scaffold(
-      appBar: AppBar(
-        backgroundColor: cs.primary,
-        foregroundColor: Colors.white,
-        title: const Text('Módulo: Entrega de Alimentos', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 17)),
-        centerTitle: true,
-        elevation: 0,
+/// AppBar personalizado con gradiente superior sutil
+PreferredSizeWidget _buildAppBar(String title, {List<Widget>? actions}) {
+  return AppBar(
+    title: Text(title),
+    actions: actions,
+    flexibleSpace: Container(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          colors: [kPrimaryDark, kPrimary],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
       ),
-      body: ListView(
-        padding: const EdgeInsets.all(22),
-        children: [
-          _AccesoCard(
-            icon: Icons.qr_code_scanner_rounded,
-            titulo: 'Registrar Retiro',
-            subtitulo: 'Escanear carnet y prestar utensilio de forma rápida',
-            color: const Color(0xFFB71C1C),
-            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const RegistrarPage())),
-          ),
-          const SizedBox(height: 18),
-          _AccesoCard(
-            icon: Icons.assignment_return_rounded,
-            titulo: 'Ver Pendientes y Devoluciones',
-            subtitulo: 'Seleccionar modo de devolución del día y escanear',
-            color: const Color(0xFF0F172A),
-            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const PendientesPage())),
-          ),
-        ],
-      ),
-    );
-  }
+    ),
+  );
 }
 
-// ==========================================
-// MÓDULO 2: INVENTARIO Y REPORTES
-// ==========================================
-class InventarioModuloPage extends StatelessWidget {
-  const InventarioModuloPage({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    return Scaffold(
-      appBar: AppBar(
-        backgroundColor: cs.primary,
-        foregroundColor: Colors.white,
-        title: const Text('Módulo: Inventario', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 17)),
-        centerTitle: true,
-        elevation: 0,
+/// Chip de estado con punto de color
+Widget _buildStatusChip(String label, Color color) {
+  return Container(
+    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+    decoration: BoxDecoration(
+      color: color.withOpacity(0.1),
+      borderRadius: BorderRadius.circular(20),
+    ),
+    child: Row(mainAxisSize: MainAxisSize.min, children: [
+      Container(
+        width: 6,
+        height: 6,
+        decoration: BoxDecoration(color: color, shape: BoxShape.circle),
       ),
-      body: ListView(
-        padding: const EdgeInsets.all(22),
-        children: [
-          _AccesoCard(
-            icon: Icons.donut_large_rounded,
-            titulo: 'Estadísticas del Día',
-            subtitulo: 'Gráficos interactivos y disponibilidad actual en tiempo real',
-            color: const Color(0xFF0284C7),
-            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const EstadisticasPage())),
-          ),
-          const SizedBox(height: 18),
-          _AccesoCard(
-            icon: Icons.picture_as_pdf_rounded,
-            titulo: 'Informes Históricos (PDF y Excel)',
-            subtitulo: 'Consultar fechas anteriores y exportar reportes detallados',
-            color: const Color(0xFF16A34A),
-            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const InformesPage())),
-          ),
-        ],
-      ),
-    );
-  }
+      const SizedBox(width: 6),
+      Text(label,
+          style: TextStyle(
+              color: color, fontSize: 11.5, fontWeight: FontWeight.w700)),
+    ]),
+  );
 }
 
+/// Sección con título y línea decorativa
+Widget _sectionTitle(String text) {
+  return Padding(
+    padding: const EdgeInsets.only(bottom: 12),
+    child: Row(children: [
+      Container(width: 3, height: 18, color: kPrimary,
+          decoration: BoxDecoration(
+              color: kPrimary, borderRadius: BorderRadius.circular(2))),
+      const SizedBox(width: 10),
+      Text(text,
+          style: const TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.w700,
+              color: kTextMain,
+              letterSpacing: -0.2)),
+    ]),
+  );
+}
+
+// ─────────────────────────────────────────────
+// HOME PAGE
+// ─────────────────────────────────────────────
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
 
-  Widget _buildAppLogo({double size = 80}) {
+  Widget _buildAppLogo({double size = 72}) {
     return Image.asset(
       'assets/icon/Logo_IN.PNG',
       width: size,
       height: size,
       fit: BoxFit.contain,
-      errorBuilder: (context, error, stackTrace) {
-        return Icon(Icons.school_rounded, size: size, color: const Color(0xFFB71C1C));
-      },
+      errorBuilder: (_, __, ___) =>
+          Icon(Icons.school_rounded, size: size, color: Colors.white),
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
+    final size = MediaQuery.of(context).size;
     return Scaffold(
-      appBar: AppBar(
-        backgroundColor: cs.primary,
-        foregroundColor: Colors.white,
-        title: const Text('Cocina Escolar INFRAMEN', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 17)),
-        centerTitle: true,
-        elevation: 0,
-      ),
-      body: Center(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(22),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                      color: cs.primary.withOpacity(0.08),
-                      blurRadius: 20,
-                      offset: const Offset(0, 8),
-                    )
-                  ],
-                ),
-                child: _buildAppLogo(size: 78),
+      body: Column(
+        children: [
+          // ── Hero Header ──────────────────────────
+          Container(
+            width: double.infinity,
+            constraints: BoxConstraints(minHeight: size.height * 0.38),
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                colors: [kPrimaryDeep, kPrimary],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
               ),
-              const SizedBox(height: 20),
-              const Text(
-                'INFRAMEN',
-                style: TextStyle(
-                  fontSize: 26,
-                  fontWeight: FontWeight.w800,
-                  color: Color(0xFF0F172A),
-                  letterSpacing: 2.5,
-                ),
+              borderRadius: BorderRadius.only(
+                bottomLeft: Radius.circular(36),
+                bottomRight: Radius.circular(36),
               ),
-              const SizedBox(height: 6),
-              const Text(
-                'Sistema Integral de Gestión de Cafetín Escolar',
-                textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 13.5, color: Color(0xFF64748B), fontWeight: FontWeight.w500),
-              ),
-              const SizedBox(height: 40),
-              Container(
-                constraints: const BoxConstraints(maxWidth: 450),
+            ),
+            child: SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(28, 24, 28, 36),
                 child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _AccesoCardPrincipal(
-                      icon: Icons.inventory_2_rounded,
-                      titulo: 'Inventario',
-                      subtitulo: 'Informes históricos y estadísticas de vajilla',
-                      color: const Color(0xFF16A34A),
-                      onTap: () {
-                        Navigator.push(context, MaterialPageRoute(builder: (_) => const InventarioModuloPage()));
-                      },
+                    // Logo + badge
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(14),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.12),
+                            borderRadius: BorderRadius.circular(18),
+                            border: Border.all(
+                                color: Colors.white.withOpacity(0.2), width: 1),
+                          ),
+                          child: _buildAppLogo(size: 40),
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 14, vertical: 8),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.12),
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(
+                                color: Colors.white.withOpacity(0.18),
+                                width: 1),
+                          ),
+                          child: Row(children: const [
+                            Icon(Icons.circle, color: Color(0xFF4ADE80), size: 8),
+                            SizedBox(width: 6),
+                            Text('En línea',
+                                style: TextStyle(
+                                    color: Colors.white70,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600)),
+                          ]),
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: 18),
-                    _AccesoCardPrincipal(
-                      icon: Icons.restaurant_rounded,
-                      titulo: 'Entrega de Alimentos',
-                      subtitulo: 'Registro de retiros, pendientes y devoluciones',
-                      color: const Color(0xFFB71C1C),
-                      onTap: () {
-                        Navigator.push(context, MaterialPageRoute(builder: (_) => const EntregaModuloPage()));
-                      },
+                    const SizedBox(height: 28),
+                    const Text(
+                      'INFRAMEN',
+                      style: TextStyle(
+                        fontSize: 30,
+                        fontWeight: FontWeight.w800,
+                        color: Colors.white,
+                        letterSpacing: 3,
+                        height: 1,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      'Sistema de Gestión\nde Cafetín Escolar',
+                      style: TextStyle(
+                        fontSize: 15,
+                        color: Colors.white.withOpacity(0.72),
+                        height: 1.5,
+                        fontWeight: FontWeight.w400,
+                      ),
                     ),
                   ],
                 ),
               ),
-            ],
+            ),
           ),
-        ),
+
+          // ── Módulos ───────────────────────────────
+          Expanded(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(20, 28, 20, 28),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _sectionTitle('Módulos del sistema'),
+                  const SizedBox(height: 4),
+                  _ModuloCard(
+                    icon: Icons.restaurant_rounded,
+                    titulo: 'Entrega de Alimentos',
+                    subtitulo:
+                        'Registro de retiros, devoluciones y utensilios prestados',
+                    gradientColors: const [Color(0xFFC0392B), Color(0xFF96281B)],
+                    onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (_) => const EntregaModuloPage())),
+                  ),
+                  const SizedBox(height: 16),
+                  _ModuloCard(
+                    icon: Icons.inventory_2_rounded,
+                    titulo: 'Inventario y Reportes',
+                    subtitulo:
+                        'Estadísticas del día, informes históricos y exportación',
+                    gradientColors: const [Color(0xFF1D4ED8), Color(0xFF1E40AF)],
+                    onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (_) => const InventarioModuloPage())),
+                  ),
+                  const SizedBox(height: 32),
+
+                  // ── Accesos rápidos ──────────────────
+                  _sectionTitle('Accesos rápidos'),
+                  const SizedBox(height: 4),
+                  Row(children: [
+                    _QuickAction(
+                      icon: Icons.qr_code_scanner_rounded,
+                      label: 'Escanear',
+                      color: kPrimary,
+                      onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (_) => const RegistrarPage())),
+                    ),
+                    const SizedBox(width: 12),
+                    _QuickAction(
+                      icon: Icons.donut_large_rounded,
+                      label: 'Hoy',
+                      color: kBlue,
+                      onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (_) => const EstadisticasPage())),
+                    ),
+                    const SizedBox(width: 12),
+                    _QuickAction(
+                      icon: Icons.assignment_return_rounded,
+                      label: 'Devolver',
+                      color: kGreen,
+                      onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (_) => const PendientesPage())),
+                    ),
+                    const SizedBox(width: 12),
+                    _QuickAction(
+                      icon: Icons.picture_as_pdf_rounded,
+                      label: 'Informes',
+                      color: kAmber,
+                      onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (_) => const InformesPage())),
+                    ),
+                  ]),
+                ],
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
 }
 
-class _AccesoCardPrincipal extends StatelessWidget {
+class _ModuloCard extends StatelessWidget {
   final IconData icon;
   final String titulo;
   final String subtitulo;
-  final Color color;
+  final List<Color> gradientColors;
   final VoidCallback onTap;
 
-  const _AccesoCardPrincipal({
+  const _ModuloCard({
     required this.icon,
     required this.titulo,
     required this.subtitulo,
-    required this.color,
+    required this.gradientColors,
     required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(24),
-      elevation: 1,
-      shadowColor: Colors.black12,
+      color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(22),
         child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 22, horizontal: 20),
+          padding: const EdgeInsets.all(22),
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(24),
-            border: Border.all(color: const Color(0xFFE2E8F0), width: 1),
-          ),
-          child: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: color.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(18),
-                ),
-                child: Icon(icon, color: color, size: 30),
+            gradient: LinearGradient(
+              colors: gradientColors,
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.circular(22),
+            boxShadow: [
+              BoxShadow(
+                color: gradientColors[0].withOpacity(0.32),
+                blurRadius: 20,
+                offset: const Offset(0, 8),
               ),
-              const SizedBox(width: 18),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      titulo,
-                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Color(0xFF0F172A)),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      subtitulo,
-                      style: const TextStyle(fontSize: 12, color: Color(0xFF64748B)),
-                    ),
-                  ],
-                ),
-              ),
-              const Icon(Icons.arrow_forward_ios_rounded, size: 16, color: Color(0xFF94A3B8)),
             ],
+          ),
+          child: Row(children: [
+            Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.18),
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Icon(icon, color: Colors.white, size: 28),
+            ),
+            const SizedBox(width: 18),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(titulo,
+                      style: const TextStyle(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 16,
+                          color: Colors.white,
+                          letterSpacing: -0.3)),
+                  const SizedBox(height: 5),
+                  Text(subtitulo,
+                      style: TextStyle(
+                          fontSize: 12.5,
+                          color: Colors.white.withOpacity(0.75),
+                          height: 1.4)),
+                ],
+              ),
+            ),
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.14),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.arrow_forward_rounded,
+                  color: Colors.white, size: 16),
+            ),
+          ]),
+        ),
+      ),
+    );
+  }
+}
+
+class _QuickAction extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final Color color;
+  final VoidCallback onTap;
+
+  const _QuickAction({
+    required this.icon,
+    required this.label,
+    required this.color,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: Material(
+        color: kSurface,
+        borderRadius: BorderRadius.circular(16),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(16),
+          child: Container(
+            padding: const EdgeInsets.symmetric(vertical: 16),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: kBorder, width: 1),
+              boxShadow: kShadowSoft,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: color.withOpacity(0.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(icon, color: color, size: 22),
+                ),
+                const SizedBox(height: 8),
+                Text(label,
+                    style: const TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: kTextSub)),
+              ],
+            ),
           ),
         ),
       ),
@@ -418,6 +728,9 @@ class _AccesoCardPrincipal extends StatelessWidget {
   }
 }
 
+// ─────────────────────────────────────────────
+// CARD DE ACCESO GENÉRICA (módulos internos)
+// ─────────────────────────────────────────────
 class _AccesoCard extends StatelessWidget {
   final IconData icon;
   final String titulo;
@@ -436,53 +749,141 @@ class _AccesoCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(22),
-      elevation: 0,
+      color: kSurface,
+      borderRadius: BorderRadius.circular(20),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(22),
+        borderRadius: BorderRadius.circular(20),
         child: Container(
-          padding: const EdgeInsets.all(22),
+          padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(22),
-            border: Border.all(color: const Color(0xFFE2E8F0), width: 1),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: kBorder, width: 1),
+            boxShadow: kShadowSoft,
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: color.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Icon(icon, color: color, size: 28),
+          child: Row(children: [
+            Container(
+              width: 52,
+              height: 52,
+              decoration: BoxDecoration(
+                color: color.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(14),
               ),
-              const SizedBox(height: 18),
-              Text(
-                titulo,
-                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Color(0xFF0F172A)),
+              child: Icon(icon, color: color, size: 26),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(titulo,
+                      style: const TextStyle(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 15,
+                          color: kTextMain,
+                          letterSpacing: -0.2)),
+                  const SizedBox(height: 4),
+                  Text(subtitulo,
+                      style: const TextStyle(
+                          fontSize: 12.5, color: kTextSub, height: 1.4)),
+                ],
               ),
-              const SizedBox(height: 4),
-              Text(
-                subtitulo,
-                style: const TextStyle(fontSize: 12, color: Color(0xFF64748B), height: 1.3),
+            ),
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: color.withOpacity(0.08),
+                shape: BoxShape.circle,
               ),
-            ],
-          ),
+              child: Icon(Icons.arrow_forward_ios_rounded,
+                  size: 14, color: color),
+            ),
+          ]),
         ),
       ),
     );
   }
 }
 
-// ==========================================
+// ─────────────────────────────────────────────
+// MÓDULO 1: ENTREGA
+// ─────────────────────────────────────────────
+class EntregaModuloPage extends StatelessWidget {
+  const EntregaModuloPage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: _buildAppBar('Entrega de Alimentos'),
+      body: ListView(
+        padding: const EdgeInsets.all(20),
+        children: [
+          const SizedBox(height: 4),
+          _AccesoCard(
+            icon: Icons.qr_code_scanner_rounded,
+            titulo: 'Registrar Retiro',
+            subtitulo: 'Escanear carnet y registrar préstamo de utensilio',
+            color: kPrimary,
+            onTap: () => Navigator.push(context,
+                MaterialPageRoute(builder: (_) => const RegistrarPage())),
+          ),
+          const SizedBox(height: 16),
+          _AccesoCard(
+            icon: Icons.assignment_return_rounded,
+            titulo: 'Pendientes y Devoluciones',
+            subtitulo: 'Seleccionar modo de devolución y escanear carnet',
+            color: kPrimaryDeep,
+            onTap: () => Navigator.push(context,
+                MaterialPageRoute(builder: (_) => const PendientesPage())),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────
+// MÓDULO 2: INVENTARIO
+// ─────────────────────────────────────────────
+class InventarioModuloPage extends StatelessWidget {
+  const InventarioModuloPage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: _buildAppBar('Inventario y Reportes'),
+      body: ListView(
+        padding: const EdgeInsets.all(20),
+        children: [
+          const SizedBox(height: 4),
+          _AccesoCard(
+            icon: Icons.donut_large_rounded,
+            titulo: 'Estadísticas del Día',
+            subtitulo: 'Gráficos y disponibilidad actual en tiempo real',
+            color: kBlue,
+            onTap: () => Navigator.push(context,
+                MaterialPageRoute(builder: (_) => const EstadisticasPage())),
+          ),
+          const SizedBox(height: 16),
+          _AccesoCard(
+            icon: Icons.picture_as_pdf_rounded,
+            titulo: 'Informes Históricos',
+            subtitulo: 'Consultar fechas anteriores y exportar PDF / Excel',
+            color: kGreen,
+            onTap: () => Navigator.push(context,
+                MaterialPageRoute(builder: (_) => const InformesPage())),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────
 // PANTALLA: REGISTRAR RETIRO
-// ==========================================
+// ─────────────────────────────────────────────
 class RegistrarPage extends StatefulWidget {
   const RegistrarPage({super.key});
-
   @override
   State<RegistrarPage> createState() => _RegistrarPageState();
 }
@@ -493,11 +894,16 @@ class _RegistrarPageState extends State<RegistrarPage> {
   bool _cargando = false;
   bool _autoGuardado = true;
 
-  final _tipos = const ['Plato', 'Vaso', 'Taza'];
-  final _iconoTipo = const {
+  static const _tipos = ['Plato', 'Vaso', 'Taza'];
+  static const _iconoTipo = {
     'Plato': Icons.dinner_dining,
-    'Vaso': Icons.local_drink,
-    'Taza': Icons.coffee,
+    'Vaso': Icons.local_drink_rounded,
+    'Taza': Icons.coffee_rounded,
+  };
+  static const _colorTipo = {
+    'Plato': kBlue,
+    'Vaso': kAmber,
+    'Taza': kPrimary,
   };
 
   @override
@@ -510,13 +916,14 @@ class _RegistrarPageState extends State<RegistrarPage> {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => EscaneoPage(
+        builder: (_) => EscaneoPage(
           onCodigoEscaneado: (codigo) {
             setState(() => _carnetCtrl.text = codigo);
             if (_autoGuardado) {
               _procesarRetiro(codigo);
             } else {
-              mostrarNotificacionApp('Código Capturado', 'Carnet $codigo listo. Presiona "Registrar Retiro".');
+              mostrarNotificacionApp(
+                  'Código Capturado', 'Carnet $codigo listo.');
             }
           },
         ),
@@ -528,39 +935,38 @@ class _RegistrarPageState extends State<RegistrarPage> {
     if (codigo.trim().isEmpty) return;
     setState(() => _cargando = true);
     try {
-      final estResp = await http.get(Uri.parse('$kBaseUrl/estudiante/$codigo'));
-      
+      final estResp =
+          await http.get(Uri.parse('$kBaseUrl/estudiante/$codigo'));
       if (estResp.statusCode == 404) {
         if (!mounted) return;
         _mostrarDialogoEstudianteNoEncontrado(codigo);
         return;
       }
-
       if (estResp.statusCode != 200) {
-        mostrarNotificacionApp('Error de Servidor', 'No se pudo conectar con el servidor', esError: true);
+        mostrarNotificacionApp('Error de Servidor',
+            'No se pudo conectar con el servidor',
+            esError: true);
         return;
       }
-
       final estudianteId = jsonDecode(estResp.body)['estudiante']['id'];
-
       final retResp = await http.post(
         Uri.parse('$kBaseUrl/retiro'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({'estudiante_id': estudianteId, 'tipo': _tipo}),
       );
-
       if (retResp.statusCode == 200 || retResp.statusCode == 201) {
-        mostrarNotificacionApp('¡Préstamo Exitoso!', 'Se registró un retiro de $_tipo para el carnet $codigo');
-        await mostrarNotificacionLocal(
-          'Retiro Registrado',
-          'Se registró un préstamo de $_tipo para el carnet $codigo',
-        );
+        mostrarNotificacionApp('¡Préstamo Exitoso!',
+            'Retiro de $_tipo para carnet $codigo');
+        await mostrarNotificacionLocal('Retiro Registrado',
+            'Préstamo de $_tipo para el carnet $codigo');
         _carnetCtrl.clear();
       } else {
-        mostrarNotificacionApp('Error', 'Error al registrar el retiro', esError: true);
+        mostrarNotificacionApp('Error', 'Error al registrar el retiro',
+            esError: true);
       }
     } catch (_) {
-      mostrarNotificacionApp('Error de Red', 'No se pudo establecer conexión con el servidor', esError: true);
+      mostrarNotificacionApp('Error de Red', 'No se pudo conectar al servidor',
+          esError: true);
     } finally {
       if (mounted) setState(() => _cargando = false);
     }
@@ -569,26 +975,33 @@ class _RegistrarPageState extends State<RegistrarPage> {
   void _mostrarDialogoEstudianteNoEncontrado(String codigo) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (_) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
-        title: const Text('Estudiante no registrado', style: TextStyle(fontWeight: FontWeight.bold)),
-        content: Text('El código "$codigo" no se encuentra en la base de datos. ¿Deseas registrar a este estudiante ahora?'),
+        title: const Text('Estudiante no registrado',
+            style: TextStyle(fontWeight: FontWeight.w700, fontSize: 17)),
+        content: Text(
+            'El código "$codigo" no existe en la base de datos.\n¿Deseas registrar a este estudiante ahora?',
+            style: const TextStyle(color: kTextSub, height: 1.5)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Cancelar', style: TextStyle(color: Colors.grey)),
+            child: const Text('Cancelar',
+                style: TextStyle(color: kTextSub)),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFB71C1C),
+              backgroundColor: kPrimary,
               foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
             ),
             onPressed: () {
               Navigator.pop(context);
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (_) => RegistrarEstudiantePage(codigoInicial: codigo)),
+                MaterialPageRoute(
+                    builder: (_) =>
+                        RegistrarEstudiantePage(codigoInicial: codigo)),
               );
             },
             child: const Text('Registrar Alumno'),
@@ -600,121 +1013,239 @@ class _RegistrarPageState extends State<RegistrarPage> {
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
     return Scaffold(
-      appBar: AppBar(
-        backgroundColor: cs.primary,
-        foregroundColor: Colors.white,
-        title: const Text('Registrar Retiro', style: TextStyle(fontWeight: FontWeight.bold)),
-        centerTitle: true,
-      ),
+      appBar: _buildAppBar('Registrar Retiro'),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(22),
-        child: Card(
-          child: Padding(
-            padding: const EdgeInsets.all(24),
+        padding: const EdgeInsets.all(20),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          // ── Card principal ───────────────────────
+          Container(
+            decoration: BoxDecoration(
+              color: kSurface,
+              borderRadius: BorderRadius.circular(22),
+              border: Border.all(color: kBorder),
+              boxShadow: kShadowSoft,
+            ),
+            padding: const EdgeInsets.all(22),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('Control de Préstamo', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF0F172A))),
-                const SizedBox(height: 6),
-                const Text('Escanea el carnet o ingresa el código del alumno.', style: TextStyle(color: Colors.grey, fontSize: 13)),
+                Row(children: [
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: kPrimary.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(Icons.outbox_rounded,
+                        color: kPrimary, size: 22),
+                  ),
+                  const SizedBox(width: 14),
+                  const Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Control de Préstamo',
+                            style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w700,
+                                color: kTextMain)),
+                        SizedBox(height: 2),
+                        Text('Escanea o ingresa el carnet del alumno',
+                            style:
+                                TextStyle(fontSize: 12.5, color: kTextSub)),
+                      ],
+                    ),
+                  ),
+                ]),
                 const SizedBox(height: 20),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFF8FAFC),
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: const Color(0xFFE2E8F0)),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Row(
-                        children: [
-                          Icon(
-                            _autoGuardado ? Icons.bolt_rounded : Icons.touch_app_rounded,
-                            color: _autoGuardado ? const Color(0xFF16A34A) : Colors.grey,
-                            size: 24,
-                          ),
-                          const SizedBox(width: 12),
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text('Guardado automático al escanear', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xFF1E293B))),
-                              Text(_autoGuardado ? 'Se procesa al instante' : 'Requiere pulsar el botón manual', style: const TextStyle(fontSize: 11, color: Color(0xFF64748B))),
-                            ],
-                          ),
-                        ],
-                      ),
-                      Switch(
-                        value: _autoGuardado,
-                        activeColor: const Color(0xFF16A34A),
-                        onChanged: (val) => setState(() => _autoGuardado = val),
-                      ),
-                    ],
-                  ),
+                const Divider(color: kBorder, height: 1),
+                const SizedBox(height: 20),
+
+                // Toggle auto-guardado
+                _ToggleRow(
+                  icon: _autoGuardado
+                      ? Icons.bolt_rounded
+                      : Icons.touch_app_rounded,
+                  iconColor: _autoGuardado ? kGreen : kTextSub,
+                  titulo: 'Guardado automático al escanear',
+                  subtitulo: _autoGuardado
+                      ? 'Procesa al instante sin confirmación'
+                      : 'Requiere pulsar el botón manualmente',
+                  value: _autoGuardado,
+                  activeColor: kGreen,
+                  onChanged: (v) => setState(() => _autoGuardado = v),
                 ),
-                const SizedBox(height: 22),
+
+                const SizedBox(height: 20),
+
+                // Campo carnet
                 TextField(
                   controller: _carnetCtrl,
                   decoration: InputDecoration(
                     labelText: 'Carnet / Código de barras',
                     prefixIcon: const Icon(Icons.badge_outlined),
                     suffixIcon: IconButton(
-                      icon: Icon(Icons.camera_alt_rounded, color: cs.primary),
+                      icon: const Icon(Icons.camera_alt_rounded,
+                          color: kPrimary),
                       onPressed: _abrirEscaner,
                       tooltip: 'Escanear con cámara',
                     ),
                   ),
                 ),
-                const SizedBox(height: 20),
-                DropdownButtonFormField<String>(
-                  value: _tipo,
-                  decoration: const InputDecoration(
-                    labelText: 'Tipo de Utensilio',
-                    prefixIcon: Icon(Icons.category_outlined),
-                  ),
-                  items: _tipos.map((t) => DropdownMenuItem(
-                    value: t,
-                    child: Row(children: [
-                      Icon(_iconoTipo[t], size: 20, color: cs.primary),
-                      const SizedBox(width: 10),
-                      Text(t, style: const TextStyle(fontWeight: FontWeight.w500)),
-                    ]),
-                  )).toList(),
-                  onChanged: (v) => setState(() => _tipo = v!),
+
+                const SizedBox(height: 16),
+
+                // Selector tipo utensilio
+                const Text('Tipo de utensilio',
+                    style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: kTextSub)),
+                const SizedBox(height: 10),
+                Row(
+                  children: _tipos.map((t) {
+                    final sel = _tipo == t;
+                    final col = _colorTipo[t] ?? kPrimary;
+                    return Expanded(
+                      child: GestureDetector(
+                        onTap: () => setState(() => _tipo = t),
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 200),
+                          margin: const EdgeInsets.symmetric(horizontal: 4),
+                          padding: const EdgeInsets.symmetric(
+                              vertical: 14, horizontal: 6),
+                          decoration: BoxDecoration(
+                            color: sel ? col : kSurface,
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(
+                                color: sel ? col : kBorder, width: 1.5),
+                            boxShadow: sel
+                                ? [
+                                    BoxShadow(
+                                        color: col.withOpacity(0.28),
+                                        blurRadius: 12,
+                                        offset: const Offset(0, 4))
+                                  ]
+                                : [],
+                          ),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(_iconoTipo[t],
+                                  color: sel ? Colors.white : col, size: 24),
+                              const SizedBox(height: 6),
+                              Text(t,
+                                  style: TextStyle(
+                                      color:
+                                          sel ? Colors.white : kTextSub,
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 12.5)),
+                            ],
+                          ),
+                        ),
+                      ),
+                    );
+                  }).toList(),
                 ),
-                const SizedBox(height: 30),
+
+                const SizedBox(height: 24),
+
                 SizedBox(
                   width: double.infinity,
                   height: 52,
                   child: ElevatedButton.icon(
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: cs.primary,
+                      backgroundColor: kPrimary,
                       foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                      elevation: 2,
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14)),
                     ),
-                    onPressed: _cargando ? null : () => _procesarRetiro(_carnetCtrl.text.trim()),
-                    icon: _cargando 
-                      ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                      : const Icon(Icons.outbox_rounded),
-                    label: Text(_cargando ? 'Procesando...' : 'Registrar Retiro', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                    onPressed: _cargando
+                        ? null
+                        : () => _procesarRetiro(_carnetCtrl.text.trim()),
+                    icon: _cargando
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                                color: Colors.white, strokeWidth: 2.5))
+                        : const Icon(Icons.outbox_rounded),
+                    label: Text(
+                        _cargando ? 'Procesando...' : 'Registrar Retiro',
+                        style: const TextStyle(
+                            fontSize: 15, fontWeight: FontWeight.w700)),
                   ),
                 ),
               ],
             ),
           ),
-        ),
+        ]),
       ),
     );
   }
 }
 
+// ─────────────────────────────────────────────
+// TOGGLE ROW (componente reutilizable)
+// ─────────────────────────────────────────────
+class _ToggleRow extends StatelessWidget {
+  final IconData icon;
+  final Color iconColor;
+  final String titulo;
+  final String subtitulo;
+  final bool value;
+  final Color activeColor;
+  final ValueChanged<bool> onChanged;
+
+  const _ToggleRow({
+    required this.icon,
+    required this.iconColor,
+    required this.titulo,
+    required this.subtitulo,
+    required this.value,
+    required this.activeColor,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: kBackground,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: kBorder, width: 1),
+      ),
+      child: Row(children: [
+        Icon(icon, color: iconColor, size: 22),
+        const SizedBox(width: 14),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(titulo,
+                  style: const TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 13,
+                      color: kTextMain)),
+              const SizedBox(height: 2),
+              Text(subtitulo,
+                  style: const TextStyle(fontSize: 11.5, color: kTextSub)),
+            ],
+          ),
+        ),
+        Switch(value: value, activeColor: activeColor, onChanged: onChanged),
+      ]),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────
+// PANTALLA: ESTADÍSTICAS
+// ─────────────────────────────────────────────
 class EstadisticasPage extends StatefulWidget {
   const EstadisticasPage({super.key});
-
   @override
   State<EstadisticasPage> createState() => _EstadisticasPageState();
 }
@@ -725,10 +1256,16 @@ class _EstadisticasPageState extends State<EstadisticasPage> {
   String _fechaHoy = '';
   int _touchedIndex = -1;
 
-  final _iconoTipo = const {
+  static const _iconoTipo = {
     'Plato': Icons.dinner_dining,
-    'Vaso': Icons.local_drink,
-    'Taza': Icons.coffee,
+    'Vaso': Icons.local_drink_rounded,
+    'Taza': Icons.coffee_rounded,
+  };
+
+  static const _colorTipo = {
+    'Plato': kBlue,
+    'Vaso': kAmber,
+    'Taza': kPrimary,
   };
 
   @override
@@ -740,14 +1277,15 @@ class _EstadisticasPageState extends State<EstadisticasPage> {
   Future<void> _obtenerEstadisticasHoy() async {
     setState(() => _cargando = true);
     try {
-      final url = Uri.parse('$kBaseUrl/informe');
-      final response = await http.get(url);
-      
+      final response =
+          await http.get(Uri.parse('$kBaseUrl/informe'));
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         setState(() {
-          _informe = data is List ? data : (data['informe'] ?? []);
-          _fechaHoy = data['fecha'] ?? DateTime.now().toString().split(' ')[0];
+          _informe =
+              data is List ? data : (data['informe'] ?? []);
+          _fechaHoy = data['fecha'] ??
+              DateTime.now().toString().split(' ')[0];
         });
       } else {
         setState(() => _informe = []);
@@ -760,249 +1298,291 @@ class _EstadisticasPageState extends State<EstadisticasPage> {
   }
 
   List<PieChartSectionData> _generarDatosPastel() {
-    double total = 0;
-    for (var item in _informe) {
-      total += double.tryParse(item['entregados'].toString()) ?? 0.0;
-    }
-
+    double total = _informe.fold(
+        0, (s, e) => s + (double.tryParse(e['entregados'].toString()) ?? 0));
     return List.generate(_informe.length, (i) {
       final isTouched = i == _touchedIndex;
-      final radius = isTouched ? 72.0 : 62.0;
       final item = _informe[i];
       final tipo = item['tipo'] ?? 'Utensilio';
-      final entregados = double.tryParse(item['entregados'].toString()) ?? 0.0;
-      final porcentaje = total > 0 ? (entregados / total * 100) : 0.0;
-
-      Color colorUtensilio;
-      switch (tipo) {
-        case 'Plato':
-          colorUtensilio = const Color(0xFF2563EB);
-          break;
-        case 'Vaso':
-          colorUtensilio = const Color(0xFFF59E0B);
-          break;
-        case 'Taza':
-          colorUtensilio = const Color(0xFFEF4444);
-          break;
-        default:
-          colorUtensilio = const Color(0xFF10B981);
-      }
+      final val =
+          double.tryParse(item['entregados'].toString()) ?? 0.0;
+      final pct = total > 0 ? val / total * 100 : 0.0;
+      final color = _colorTipo[tipo] ?? const Color(0xFF10B981);
 
       return PieChartSectionData(
-        color: colorUtensilio,
-        value: entregados,
-        title: '${porcentaje.toStringAsFixed(0)}%',
-        radius: radius,
+        color: color,
+        value: val,
+        title: '${pct.toStringAsFixed(0)}%',
+        radius: isTouched ? 74.0 : 62.0,
         titleStyle: TextStyle(
-          fontSize: isTouched ? 16.0 : 13.0,
-          fontWeight: FontWeight.bold,
+          fontSize: isTouched ? 16 : 13,
+          fontWeight: FontWeight.w800,
           color: Colors.white,
-          shadows: const [Shadow(color: Colors.black38, blurRadius: 4)],
+          shadows: const [Shadow(color: Colors.black26, blurRadius: 6)],
         ),
-        borderSide: isTouched ? const BorderSide(color: Colors.white, width: 3) : BorderSide.none,
+        borderSide: isTouched
+            ? const BorderSide(color: Colors.white, width: 3)
+            : BorderSide.none,
       );
     });
   }
 
-  int _calcularTotalEntregados() {
-    int total = 0;
-    for (var item in _informe) {
-      total += int.tryParse(item['entregados'].toString()) ?? 0;
-    }
-    return total;
-  }
-
-  Widget _buildLeyenda() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF8FAFC),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
-      ),
-      child: const Row(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-        children: [
-          _ItemLeyenda(color: Color(0xFF2563EB), texto: 'Platos'),
-          _ItemLeyenda(color: Color(0xFFF59E0B), texto: 'Vasos'),
-          _ItemLeyenda(color: Color(0xFFEF4444), texto: 'Tazas'),
-        ],
-      ),
-    );
-  }
+  int get _totalEntregados => _informe.fold(
+      0, (s, e) => s + (int.tryParse(e['entregados'].toString()) ?? 0));
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    final totalEntregados = _calcularTotalEntregados();
-
     return Scaffold(
-      appBar: AppBar(
-        backgroundColor: cs.primary,
-        foregroundColor: Colors.white,
-        title: const Text('Estadísticas del Día', style: TextStyle(fontWeight: FontWeight.bold)),
-        centerTitle: true,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh_rounded),
-            onPressed: _obtenerEstadisticasHoy,
-            tooltip: 'Actualizar',
-          ),
-        ],
-      ),
+      appBar: _buildAppBar('Estadísticas del Día', actions: [
+        IconButton(
+          icon: const Icon(Icons.refresh_rounded),
+          onPressed: _obtenerEstadisticasHoy,
+          tooltip: 'Actualizar',
+        ),
+      ]),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(22),
-        child: Column(
-          children: [
-            if (_fechaHoy.isNotEmpty)
-              Container(
-                margin: const EdgeInsets.only(bottom: 18),
-                padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: const Color(0xFFE2E8F0)),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.calendar_today_rounded, size: 16, color: cs.primary),
-                    const SizedBox(width: 8),
-                    Text('Fecha actual: $_fechaHoy',
-                        style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF334155), fontSize: 13)),
-                  ],
-                ),
-              ),
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(22),
-                child: Column(
-                  children: [
-                    const Text('Distribución de Vajilla Entregada',
-                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Color(0xFF0F172A))),
-                    const SizedBox(height: 22),
-                    SizedBox(
-                      height: 230,
-                      child: _cargando
-                          ? const Center(child: CircularProgressIndicator())
-                          : _informe.isEmpty
-                              ? const Center(
-                                  child: Text('No hay registros para hoy',
-                                      textAlign: TextAlign.center, style: TextStyle(color: Colors.grey)))
-                              : Stack(
-                                  children: [
-                                    PieChart(
-                                      PieChartData(
-                                        pieTouchData: PieTouchData(
-                                          touchCallback: (FlTouchEvent event, pieTouchResponse) {
-                                            setState(() {
-                                              if (!event.isInterestedForInteractions ||
-                                                  pieTouchResponse == null ||
-                                                  pieTouchResponse.touchedSection == null) {
-                                                _touchedIndex = -1;
-                                                return;
-                                              }
-                                              _touchedIndex = pieTouchResponse.touchedSection!.touchedSectionIndex;
-                                            });
-                                          },
-                                        ),
-                                        borderData: FlBorderData(show: false),
-                                        sectionsSpace: 4,
-                                        centerSpaceRadius: 60,
-                                        sections: _generarDatosPastel(),
-                                      ),
-                                    ),
-                                    Center(
-                                      child: Column(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          Text(
-                                            '$totalEntregados',
-                                            style: const TextStyle(
-                                              fontSize: 28,
-                                              fontWeight: FontWeight.w800,
-                                              color: Color(0xFF0F172A),
-                                            ),
-                                          ),
-                                          const Text(
-                                            'Total',
-                                            style: TextStyle(fontSize: 12, color: Color(0xFF64748B), fontWeight: FontWeight.w500),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                    ),
-                    const SizedBox(height: 22),
-                    _buildLeyenda(),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(height: 22),
-            const Align(
+        padding: const EdgeInsets.all(20),
+        child: Column(children: [
+          // Fecha chip
+          if (_fechaHoy.isNotEmpty)
+            Align(
               alignment: Alignment.centerLeft,
-              child: Text('Detalle por Utensilio',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF0F172A))),
+              child: Container(
+                margin: const EdgeInsets.only(bottom: 18),
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 16, vertical: 9),
+                decoration: BoxDecoration(
+                  color: kSurface,
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: kBorder),
+                  boxShadow: kShadowSoft,
+                ),
+                child: Row(mainAxisSize: MainAxisSize.min, children: [
+                  const Icon(Icons.calendar_today_rounded,
+                      size: 14, color: kPrimary),
+                  const SizedBox(width: 8),
+                  Text('Hoy: $_fechaHoy',
+                      style: const TextStyle(
+                          fontWeight: FontWeight.w600,
+                          color: kTextMain,
+                          fontSize: 13)),
+                ]),
+              ),
             ),
-            const SizedBox(height: 12),
-            _cargando
-                ? const Center(child: CircularProgressIndicator())
-                : _informe.isEmpty
-                    ? const Center(
-                        child: Text('Sin detalles de movimientos para hoy',
-                            textAlign: TextAlign.center, style: TextStyle(color: Colors.grey)))
-                    : ListView.builder(
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        itemCount: _informe.length,
-                        itemBuilder: (context, index) {
-                          final item = _informe[index];
-                          final tipo = item['tipo'] ?? 'Utensilio';
-                          final entregados = item['entregados'] ?? 0;
-                          final devueltos = item['devueltos'] ?? 0;
-                          final pendientes = item['pendientes'] ?? 0;
 
-                          return Card(
-                            margin: const EdgeInsets.only(bottom: 12),
-                            child: Padding(
-                              padding: const EdgeInsets.all(16),
-                              child: Row(
+          // Gráfico pastel
+          Container(
+            decoration: BoxDecoration(
+              color: kSurface,
+              borderRadius: BorderRadius.circular(22),
+              border: Border.all(color: kBorder),
+              boxShadow: kShadowSoft,
+            ),
+            padding: const EdgeInsets.all(22),
+            child: Column(children: [
+              const Text('Distribución de Vajilla Entregada',
+                  style: TextStyle(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 15,
+                      color: kTextMain,
+                      letterSpacing: -0.2)),
+              const SizedBox(height: 22),
+              SizedBox(
+                height: 230,
+                child: _cargando
+                    ? const Center(
+                        child:
+                            CircularProgressIndicator(color: kPrimary))
+                    : _informe.isEmpty
+                        ? Center(
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.donut_large_rounded,
+                                    size: 48,
+                                    color: kBorder),
+                                const SizedBox(height: 12),
+                                const Text('Sin registros para hoy',
+                                    style: TextStyle(
+                                        color: kTextSub, fontSize: 14)),
+                              ],
+                            ),
+                          )
+                        : Stack(children: [
+                            PieChart(PieChartData(
+                              pieTouchData: PieTouchData(
+                                touchCallback:
+                                    (FlTouchEvent event, resp) {
+                                  setState(() {
+                                    if (!event
+                                            .isInterestedForInteractions ||
+                                        resp == null ||
+                                        resp.touchedSection == null) {
+                                      _touchedIndex = -1;
+                                      return;
+                                    }
+                                    _touchedIndex = resp.touchedSection!
+                                        .touchedSectionIndex;
+                                  });
+                                },
+                              ),
+                              borderData: FlBorderData(show: false),
+                              sectionsSpace: 3,
+                              centerSpaceRadius: 62,
+                              sections: _generarDatosPastel(),
+                            )),
+                            Center(
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  CircleAvatar(
-                                    radius: 24,
-                                    backgroundColor: cs.primary.withOpacity(0.08),
-                                    child: Icon(_iconoTipo[tipo] ?? Icons.analytics, color: cs.primary, size: 24),
-                                  ),
-                                  const SizedBox(width: 16),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        Text(tipo, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Color(0xFF0F172A))),
-                                        const SizedBox(height: 4),
-                                        Text('Entregados: $entregados', style: const TextStyle(fontSize: 12, color: Color(0xFF64748B))),
-                                      ],
-                                    ),
-                                  ),
-                                  Column(
-                                    crossAxisAlignment: CrossAxisAlignment.end,
-                                    children: [
-                                      Text('Devueltos: $devueltos', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF16A34A))),
-                                      const SizedBox(height: 3),
-                                      Text('Pendientes: $pendientes', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFFDC2626))),
-                                    ],
-                                  ),
+                                  Text('$_totalEntregados',
+                                      style: const TextStyle(
+                                          fontSize: 30,
+                                          fontWeight: FontWeight.w800,
+                                          color: kTextMain)),
+                                  const Text('Total',
+                                      style: TextStyle(
+                                          fontSize: 12,
+                                          color: kTextSub,
+                                          fontWeight:
+                                              FontWeight.w500)),
                                 ],
                               ),
                             ),
-                          );
-                        },
+                          ]),
+              ),
+              const SizedBox(height: 18),
+              // Leyenda
+              Container(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 16, vertical: 12),
+                decoration: BoxDecoration(
+                  color: kBackground,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: kBorder),
+                ),
+                child: const Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    _ItemLeyenda(color: kBlue, texto: 'Platos'),
+                    _ItemLeyenda(color: kAmber, texto: 'Vasos'),
+                    _ItemLeyenda(color: kPrimary, texto: 'Tazas'),
+                  ],
+                ),
+              ),
+            ]),
+          ),
+
+          const SizedBox(height: 24),
+          _sectionTitle('Detalle por Utensilio'),
+
+          if (_cargando)
+            const Center(
+                child: CircularProgressIndicator(color: kPrimary))
+          else if (_informe.isEmpty)
+            Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: kSurface,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: kBorder),
+              ),
+              child: const Center(
+                  child: Text('Sin movimientos para hoy',
+                      style: TextStyle(color: kTextSub))),
+            )
+          else
+            ListView.separated(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: _informe.length,
+              separatorBuilder: (_, __) => const SizedBox(height: 10),
+              itemBuilder: (_, i) {
+                final item = _informe[i];
+                final tipo = item['tipo'] ?? 'Utensilio';
+                final entregados = item['entregados'] ?? 0;
+                final devueltos = item['devueltos'] ?? 0;
+                final pendientes = item['pendientes'] ?? 0;
+                final col = _colorTipo[tipo] ?? kBlue;
+
+                return Container(
+                  decoration: BoxDecoration(
+                    color: kSurface,
+                    borderRadius: BorderRadius.circular(18),
+                    border: Border.all(color: kBorder),
+                    boxShadow: kShadowSoft,
+                  ),
+                  padding: const EdgeInsets.all(18),
+                  child: Row(children: [
+                    Container(
+                      width: 48,
+                      height: 48,
+                      decoration: BoxDecoration(
+                        color: col.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(14),
                       ),
-          ],
-        ),
+                      child: Icon(_iconoTipo[tipo] ?? Icons.analytics,
+                          color: col, size: 24),
+                    ),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(tipo,
+                              style: const TextStyle(
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 14,
+                                  color: kTextMain)),
+                          const SizedBox(height: 6),
+                          Row(children: [
+                            _Stat(
+                                label: 'Entregados',
+                                value: '$entregados',
+                                color: kBlue),
+                            const SizedBox(width: 14),
+                            _Stat(
+                                label: 'Devueltos',
+                                value: '$devueltos',
+                                color: kGreen),
+                            const SizedBox(width: 14),
+                            _Stat(
+                                label: 'Pendientes',
+                                value: '$pendientes',
+                                color: kPrimary),
+                          ]),
+                        ],
+                      ),
+                    ),
+                  ]),
+                );
+              },
+            ),
+        ]),
       ),
+    );
+  }
+}
+
+class _Stat extends StatelessWidget {
+  final String label;
+  final String value;
+  final Color color;
+  const _Stat({required this.label, required this.value, required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(value,
+            style: TextStyle(
+                fontWeight: FontWeight.w800,
+                fontSize: 15,
+                color: color)),
+        Text(label,
+            style: const TextStyle(fontSize: 10.5, color: kTextSub)),
+      ],
     );
   }
 }
@@ -1014,27 +1594,27 @@ class _ItemLeyenda extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Container(
+    return Row(mainAxisSize: MainAxisSize.min, children: [
+      Container(
           width: 10,
           height: 10,
-          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-        ),
-        const SizedBox(width: 8),
-        Text(texto, style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600, color: Color(0xFF334155))),
-      ],
-    );
+          decoration:
+              BoxDecoration(color: color, shape: BoxShape.circle)),
+      const SizedBox(width: 7),
+      Text(texto,
+          style: const TextStyle(
+              fontSize: 12.5,
+              fontWeight: FontWeight.w600,
+              color: kTextMain)),
+    ]);
   }
 }
 
-// ==========================================
-// PANTALLA: DEVOLUCIÓN DE PENDIENTES
-// ==========================================
+// ─────────────────────────────────────────────
+// PANTALLA: PENDIENTES / DEVOLUCIONES
+// ─────────────────────────────────────────────
 class PendientesPage extends StatefulWidget {
   const PendientesPage({super.key});
-
   @override
   State<PendientesPage> createState() => _PendientesPageState();
 }
@@ -1044,13 +1624,18 @@ class _PendientesPageState extends State<PendientesPage> {
   List<dynamic> pendientes = [];
   bool _cargando = false;
   bool _autoDevolucion = true;
-  
-  final List<String> _modosSeleccionados = ['Plato']; 
-  final List<String> _tiposDisponibles = const ['Plato', 'Vaso', 'Taza'];
-  final Map<String, IconData> _iconoTipo = const {
+
+  final List<String> _modosSeleccionados = ['Plato'];
+  static const _tiposDisponibles = ['Plato', 'Vaso', 'Taza'];
+  static const _iconoTipo = {
     'Plato': Icons.dinner_dining,
-    'Vaso': Icons.local_drink,
-    'Taza': Icons.coffee,
+    'Vaso': Icons.local_drink_rounded,
+    'Taza': Icons.coffee_rounded,
+  };
+  static const _colorTipo = {
+    'Plato': kBlue,
+    'Vaso': kAmber,
+    'Taza': kPrimary,
   };
 
   @override
@@ -1063,16 +1648,15 @@ class _PendientesPageState extends State<PendientesPage> {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => EscaneoPage(
+        builder: (_) => EscaneoPage(
           onCodigoEscaneado: (codigo) {
-            setState(() {
-              _carnetCtrl.text = codigo; 
-            });
+            setState(() => _carnetCtrl.text = codigo);
             if (_autoDevolucion) {
               _procesarDevolucionMasivaPorEscaneo(codigo);
             } else {
               _consultarPendientesManual();
-              mostrarNotificacionApp('Código Capturado', 'Carnet $codigo listo. Realiza la acción deseada.');
+              mostrarNotificacionApp(
+                  'Código Capturado', 'Carnet $codigo capturado.');
             }
           },
         ),
@@ -1083,32 +1667,29 @@ class _PendientesPageState extends State<PendientesPage> {
   Future<void> _consultarPendientesManual() async {
     final carnet = _carnetCtrl.text.trim();
     if (carnet.isEmpty) return;
-    
     setState(() => _cargando = true);
     try {
-      final url = Uri.parse('$kBaseUrl/pendientes/$carnet');
-      final response = await http.get(url);
-      
+      final response =
+          await http.get(Uri.parse('$kBaseUrl/pendientes/$carnet'));
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        final List<dynamic> listaCruda = data is List ? data : (data['pendientes'] ?? []);
-        
-        final hoyStr = DateTime.now().toString().split(' ')[0];
-        final listaDeHoy = listaCruda.where((item) {
-          final fechaRetiro = (item['fecha_retiro'] ?? '').toString();
-          return fechaRetiro.startsWith(hoyStr);
-        }).toList();
-
+        final lista =
+            data is List ? data : (data['pendientes'] ?? []);
+        final hoy = DateTime.now().toString().split(' ')[0];
         setState(() {
-          pendientes = listaDeHoy;
+          pendientes = lista
+              .where((e) =>
+                  (e['fecha_retiro'] ?? '').toString().startsWith(hoy))
+              .toList();
         });
       } else {
         setState(() => pendientes = []);
-        mostrarNotificacionApp('Aviso', 'No se encontraron pendientes para este carnet', esError: true);
+        mostrarNotificacionApp('Aviso', 'Sin pendientes para este carnet',
+            esError: true);
       }
     } catch (_) {
       setState(() => pendientes = []);
-      mostrarNotificacionApp('Error', 'Error de conexión con el servidor', esError: true);
+      mostrarNotificacionApp('Error', 'Error de conexión', esError: true);
     } finally {
       if (mounted) setState(() => _cargando = false);
     }
@@ -1117,75 +1698,66 @@ class _PendientesPageState extends State<PendientesPage> {
   Future<void> _procesarDevolucionMasivaPorEscaneo(String carnet) async {
     if (carnet.isEmpty) return;
     if (_modosSeleccionados.isEmpty) {
-      mostrarNotificacionApp('Aviso', 'Selecciona al menos un modo de utensilio a devolver', esError: true);
+      mostrarNotificacionApp(
+          'Aviso', 'Selecciona al menos un tipo a devolver',
+          esError: true);
       return;
     }
-
     setState(() => _cargando = true);
     try {
-      final url = Uri.parse('$kBaseUrl/pendientes/$carnet');
-      final response = await http.get(url);
-      
+      final response =
+          await http.get(Uri.parse('$kBaseUrl/pendientes/$carnet'));
       if (response.statusCode != 200) {
-        mostrarNotificacionApp('Error', 'Estudiante no encontrado o sin conexión', esError: true);
+        mostrarNotificacionApp('Error', 'Estudiante no encontrado',
+            esError: true);
         return;
       }
-
       final data = jsonDecode(response.body);
-      final List<dynamic> listaCruda = data is List ? data : (data['pendientes'] ?? []);
-
-      if (listaCruda.isEmpty) {
-        mostrarNotificacionApp('Aviso', 'El estudiante no tiene utensilios pendientes', esError: true);
+      final lista = data is List ? data : (data['pendientes'] ?? []);
+      final hoy = DateTime.now().toString().split(' ')[0];
+      final hoyList = lista
+          .where((e) =>
+              (e['fecha_retiro'] ?? '').toString().startsWith(hoy))
+          .toList();
+      if (hoyList.isEmpty) {
+        mostrarNotificacionApp(
+            'Aviso', 'Sin préstamos pendientes del día de hoy',
+            esError: true);
         setState(() => pendientes = []);
         return;
       }
-
-      final hoyStr = DateTime.now().toString().split(' ')[0];
-      final pendientesDeHoy = listaCruda.where((item) {
-        final fechaRetiro = (item['fecha_retiro'] ?? '').toString();
-        return fechaRetiro.startsWith(hoyStr);
+      final aDevolver = hoyList.where((e) {
+        final t = (e['tipo'] ?? '').toString().toLowerCase();
+        return _modosSeleccionados
+            .any((m) => m.toLowerCase() == t);
       }).toList();
-
-      if (pendientesDeHoy.isEmpty) {
-        mostrarNotificacionApp('Aviso', 'El alumno no tiene préstamos pendientes del día de hoy', esError: true);
-        setState(() => pendientes = []);
-        return;
-      }
-
-      final aDevolver = pendientesDeHoy.where((item) {
-        final tipoItem = (item['tipo'] ?? '').toString().toLowerCase();
-        return _modosSeleccionados.any((modo) => modo.toLowerCase() == tipoItem);
-      }).toList();
-
       if (aDevolver.isEmpty) {
-        mostrarNotificacionApp('Aviso', 'No hay pendientes de hoy para los modos seleccionados', esError: true);
-        setState(() => pendientes = pendientesDeHoy);
+        mostrarNotificacionApp(
+            'Aviso', 'Sin pendientes de los tipos seleccionados',
+            esError: true);
+        setState(() => pendientes = hoyList);
         return;
       }
-
-      int devueltosExitosos = 0;
-      for (var item in aDevolver) {
-        final movimientoId = item['id'];
-        if (movimientoId != null) {
-          final devResp = await http.put(Uri.parse('$kBaseUrl/devolucion/$movimientoId'));
-          if (devResp.statusCode == 200) {
-            devueltosExitosos++;
-          }
+      int ok = 0;
+      for (final item in aDevolver) {
+        final id = item['id'];
+        if (id != null) {
+          final r =
+              await http.put(Uri.parse('$kBaseUrl/devolucion/$id'));
+          if (r.statusCode == 200) ok++;
         }
       }
-
-      if (devueltosExitosos > 0) {
-        mostrarNotificacionApp('¡Devolución Exitosa!', 'Se devolvieron $devueltosExitosos utensilio(s) del día actual.');
-        await mostrarNotificacionLocal(
-          'Devolución Automática',
-          'Se procesó la devolución de: ${_modosSeleccionados.join(", ")} para el carnet $carnet',
-        );
+      if (ok > 0) {
+        mostrarNotificacionApp(
+            '¡Devolución Exitosa!', 'Se devolvieron $ok utensilio(s).');
+        await mostrarNotificacionLocal('Devolución Automática',
+            '${_modosSeleccionados.join(", ")} — carnet $carnet');
       }
-
       _consultarPendientesManual();
-
     } catch (_) {
-      mostrarNotificacionApp('Error', 'Error al procesar la devolución automática', esError: true);
+      mostrarNotificacionApp(
+          'Error', 'Error al procesar la devolución',
+          esError: true);
     } finally {
       if (mounted) setState(() => _cargando = false);
     }
@@ -1193,227 +1765,283 @@ class _PendientesPageState extends State<PendientesPage> {
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-
     return Scaffold(
-      appBar: AppBar(
-        backgroundColor: cs.primary,
-        foregroundColor: Colors.white,
-        title: const Text('Devolución por Modo Activo', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-        centerTitle: true,
-      ),
+      appBar: _buildAppBar('Devolución por Modo Activo'),
       body: Padding(
-        padding: const EdgeInsets.all(22),
-        child: Column(
-          children: [
-            const Align(
-              alignment: Alignment.centerLeft,
-              child: Text('1. Selecciona el tipo(s) a devolver:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Color(0xFF1E293B))),
-            ),
-            const SizedBox(height: 12),
-            Row(
-              children: _tiposDisponibles.map((tipo) {
-                final seleccionado = _modosSeleccionados.contains(tipo);
-                return Expanded(
-                  child: GestureDetector(
-                    onTap: () {
-                      setState(() {
-                        if (seleccionado) {
-                          if (_modosSeleccionados.length > 1) {
-                            _modosSeleccionados.remove(tipo);
-                          }
-                        } else {
-                          _modosSeleccionados.add(tipo);
-                        }
-                      });
-                    },
-                    child: Container(
-                      margin: const EdgeInsets.symmetric(horizontal: 4),
-                      padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 6),
-                      decoration: BoxDecoration(
-                        color: seleccionado ? cs.primary : Colors.white,
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: seleccionado ? cs.primary : const Color(0xFFE2E8F0)),
-                        boxShadow: seleccionado ? [BoxShadow(color: cs.primary.withOpacity(0.25), blurRadius: 8, offset: const Offset(0, 3))] : [],
-                      ),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(_iconoTipo[tipo], color: seleccionado ? Colors.white : cs.primary, size: 26),
-                          const SizedBox(height: 8),
-                          Text(tipo, style: TextStyle(color: seleccionado ? Colors.white : Colors.black87, fontWeight: FontWeight.bold, fontSize: 12.5)),
-                          const SizedBox(height: 6),
-                          Icon(
-                            seleccionado ? Icons.check_circle_rounded : Icons.radio_button_unchecked_rounded,
-                            size: 15,
-                            color: seleccionado ? Colors.white70 : Colors.grey,
-                          ),
-                        ],
-                      ),
+        padding: const EdgeInsets.all(20),
+        child: Column(children: [
+          // Selector tipo
+          _sectionTitle('1. Tipo(s) a devolver'),
+          Row(
+            children: _tiposDisponibles.map((tipo) {
+              final sel = _modosSeleccionados.contains(tipo);
+              final col = _colorTipo[tipo] ?? kPrimary;
+              return Expanded(
+                child: GestureDetector(
+                  onTap: () => setState(() {
+                    if (sel) {
+                      if (_modosSeleccionados.length > 1)
+                        _modosSeleccionados.remove(tipo);
+                    } else {
+                      _modosSeleccionados.add(tipo);
+                    }
+                  }),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 180),
+                    margin: const EdgeInsets.symmetric(horizontal: 4),
+                    padding: const EdgeInsets.symmetric(
+                        vertical: 14, horizontal: 6),
+                    decoration: BoxDecoration(
+                      color: sel ? col : kSurface,
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(
+                          color: sel ? col : kBorder, width: 1.5),
+                      boxShadow: sel
+                          ? [
+                              BoxShadow(
+                                  color: col.withOpacity(0.28),
+                                  blurRadius: 12,
+                                  offset: const Offset(0, 4))
+                            ]
+                          : kShadowSoft,
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(_iconoTipo[tipo],
+                            color: sel ? Colors.white : col, size: 24),
+                        const SizedBox(height: 6),
+                        Text(tipo,
+                            style: TextStyle(
+                                color: sel ? Colors.white : kTextSub,
+                                fontWeight: FontWeight.w600,
+                                fontSize: 12.5)),
+                        const SizedBox(height: 5),
+                        Icon(
+                          sel
+                              ? Icons.check_circle_rounded
+                              : Icons.radio_button_unchecked_rounded,
+                          size: 14,
+                          color:
+                              sel ? Colors.white70 : const Color(0xFFCBD5E1),
+                        ),
+                      ],
                     ),
                   ),
-                );
-              }).toList(),
-            ),
-            const SizedBox(height: 18),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-              decoration: BoxDecoration(
-                color: const Color(0xFFF8FAFC),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: const Color(0xFFE2E8F0)),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Row(
-                    children: [
-                      Icon(
-                        _autoDevolucion ? Icons.bolt_rounded : Icons.touch_app_rounded,
-                        color: _autoDevolucion ? const Color(0xFF16A34A) : Colors.grey,
-                        size: 24,
-                      ),
-                      const SizedBox(width: 12),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text('Devolución automática al escanear', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xFF1E293B))),
-                          Text(_autoDevolucion ? 'Devuelve al instante al escanear' : 'Solo captura el carnet', style: const TextStyle(fontSize: 11, color: Color(0xFF64748B))),
-                        ],
-                      ),
-                    ],
-                  ),
-                  Switch(
-                    value: _autoDevolucion,
-                    activeColor: const Color(0xFF16A34A),
-                    onChanged: (val) => setState(() => _autoDevolucion = val),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 18),
-            const Align(
-              alignment: Alignment.centerLeft,
-              child: Text('2. Ingresa o escanea el carnet del alumno:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Color(0xFF1E293B))),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: _carnetCtrl,
-              decoration: InputDecoration(
-                labelText: 'Carnet del Alumno',
-                prefixIcon: const Icon(Icons.badge_outlined),
-                suffixIcon: IconButton(
-                  icon: Icon(Icons.qr_code_scanner_rounded, color: cs.primary, size: 26),
-                  onPressed: _escanearParaDevolver,
-                  tooltip: 'Escanear carnet',
                 ),
-              ),
-              onSubmitted: (_) => _consultarPendientesManual(),
-            ),
-            const SizedBox(height: 14),
-            Row(
-              children: [
-                Expanded(
-                  child: ElevatedButton.icon(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF0F172A),
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                    ),
-                    onPressed: _consultarPendientesManual,
-                    icon: const Icon(Icons.search_rounded),
-                    label: const Text('Consultar Hoy', style: TextStyle(fontWeight: FontWeight.bold)),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: ElevatedButton.icon(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: cs.primary,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                    ),
-                    onPressed: _escanearParaDevolver,
-                    icon: const Icon(Icons.camera_alt_rounded),
-                    label: const Text('Escanear', style: TextStyle(fontWeight: FontWeight.bold)),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 22),
-            const Align(
-              alignment: Alignment.centerLeft,
-              child: Text('Utensilios pendientes del día de hoy:', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Color(0xFF0F172A))),
-            ),
-            const SizedBox(height: 12),
-            Expanded(
-              child: _cargando
-                  ? const Center(child: CircularProgressIndicator())
-                  : _carnetCtrl.text.trim().isEmpty
-                      ? const Center(
-                          child: Text('Selecciona el tipo de utensilio arriba y escanea o consulta el carnet',
-                              textAlign: TextAlign.center, style: TextStyle(color: Colors.grey)))
-                      : pendientes.isEmpty
-                          ? const Center(
-                              child: Text('No hay utensilios pendientes registrados para este alumno en el día de hoy',
-                                  textAlign: TextAlign.center, style: TextStyle(color: Color(0xFF16A34A), fontWeight: FontWeight.bold)))
-                          : ListView.builder(
-                              itemCount: pendientes.length,
-                              itemBuilder: (context, index) {
-                                final item = pendientes[index];
-                                final tipo = item['tipo'] ?? 'Utensilio';
-                                final fechaRetiro = item['fecha_retiro'] ?? '';
-                                final esModoActivo = _modosSeleccionados.any((m) => m.toLowerCase() == tipo.toLowerCase());
+              );
+            }).toList(),
+          ),
 
-                                return Card(
-                                  margin: const EdgeInsets.only(bottom: 12),
-                                  color: esModoActivo ? const Color(0xFFFFF5F5) : Colors.white,
-                                  child: ListTile(
-                                    contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
-                                    leading: CircleAvatar(
-                                      backgroundColor: esModoActivo ? const Color(0xFFFFEBEE) : Colors.grey.shade100,
-                                      child: Icon(_iconoTipo[tipo] ?? Icons.restaurant, color: esModoActivo ? const Color(0xFFC62828) : Colors.grey),
-                                    ),
-                                    title: Text(tipo, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: esModoActivo ? Colors.black87 : Colors.grey)),
-                                    subtitle: Text('Retirado hoy: $fechaRetiro', style: const TextStyle(fontSize: 12)),
-                                    trailing: Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                                      decoration: BoxDecoration(
-                                        color: esModoActivo ? const Color(0xFF16A34A).withOpacity(0.1) : Colors.grey.withOpacity(0.1),
-                                        borderRadius: BorderRadius.circular(10),
-                                      ),
-                                      child: Text(
-                                        esModoActivo ? 'A devolver' : 'Fuera de modo',
-                                        style: TextStyle(
-                                          fontSize: 11.5,
-                                          fontWeight: FontWeight.bold,
-                                          color: esModoActivo ? const Color(0xFF16A34A) : Colors.grey,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                );
-                              },
-                            ),
+          const SizedBox(height: 16),
+
+          _ToggleRow(
+            icon: _autoDevolucion
+                ? Icons.bolt_rounded
+                : Icons.touch_app_rounded,
+            iconColor: _autoDevolucion ? kGreen : kTextSub,
+            titulo: 'Devolución automática al escanear',
+            subtitulo: _autoDevolucion
+                ? 'Devuelve al instante al escanear'
+                : 'Solo captura el carnet',
+            value: _autoDevolucion,
+            activeColor: kGreen,
+            onChanged: (v) => setState(() => _autoDevolucion = v),
+          ),
+
+          const SizedBox(height: 16),
+          _sectionTitle('2. Carnet del alumno'),
+
+          TextField(
+            controller: _carnetCtrl,
+            decoration: InputDecoration(
+              labelText: 'Carnet del Alumno',
+              prefixIcon: const Icon(Icons.badge_outlined),
+              suffixIcon: IconButton(
+                icon: const Icon(Icons.qr_code_scanner_rounded,
+                    color: kPrimary, size: 26),
+                onPressed: _escanearParaDevolver,
+                tooltip: 'Escanear carnet',
+              ),
             ),
-          ],
-        ),
+            onSubmitted: (_) => _consultarPendientesManual(),
+          ),
+
+          const SizedBox(height: 12),
+
+          Row(children: [
+            Expanded(
+              child: ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: kPrimaryDeep,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14)),
+                ),
+                onPressed: _consultarPendientesManual,
+                icon: const Icon(Icons.search_rounded, size: 20),
+                label: const Text('Consultar',
+                    style: TextStyle(fontWeight: FontWeight.w700)),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: kPrimary,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14)),
+                ),
+                onPressed: _escanearParaDevolver,
+                icon: const Icon(Icons.camera_alt_rounded, size: 20),
+                label: const Text('Escanear',
+                    style: TextStyle(fontWeight: FontWeight.w700)),
+              ),
+            ),
+          ]),
+
+          const SizedBox(height: 20),
+          _sectionTitle('Utensilios pendientes hoy'),
+
+          Expanded(
+            child: _cargando
+                ? const Center(
+                    child: CircularProgressIndicator(color: kPrimary))
+                : _carnetCtrl.text.trim().isEmpty
+                    ? Center(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.badge_outlined,
+                                size: 52, color: kBorder),
+                            const SizedBox(height: 12),
+                            const Text(
+                              'Selecciona el tipo y escanea\no ingresa un carnet',
+                              textAlign: TextAlign.center,
+                              style:
+                                  TextStyle(color: kTextSub, fontSize: 14),
+                            ),
+                          ],
+                        ),
+                      )
+                    : pendientes.isEmpty
+                        ? Center(
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.all(16),
+                                  decoration: BoxDecoration(
+                                    color: kGreen.withOpacity(0.1),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: const Icon(
+                                      Icons.check_circle_rounded,
+                                      color: kGreen,
+                                      size: 36),
+                                ),
+                                const SizedBox(height: 12),
+                                const Text(
+                                  'Sin pendientes del día de hoy',
+                                  style: TextStyle(
+                                      color: kGreen,
+                                      fontWeight: FontWeight.w600),
+                                ),
+                              ],
+                            ),
+                          )
+                        : ListView.separated(
+                            itemCount: pendientes.length,
+                            separatorBuilder: (_, __) =>
+                                const SizedBox(height: 10),
+                            itemBuilder: (_, i) {
+                              final item = pendientes[i];
+                              final tipo = item['tipo'] ?? 'Utensilio';
+                              final fecha =
+                                  item['fecha_retiro'] ?? '';
+                              final esModo = _modosSeleccionados.any(
+                                  (m) =>
+                                      m.toLowerCase() ==
+                                      tipo.toLowerCase());
+                              final col =
+                                  _colorTipo[tipo] ?? kBlue;
+
+                              return Container(
+                                decoration: BoxDecoration(
+                                  color: esModo
+                                      ? kPrimary.withOpacity(0.04)
+                                      : kSurface,
+                                  borderRadius:
+                                      BorderRadius.circular(16),
+                                  border: Border.all(
+                                      color: esModo
+                                          ? kPrimary.withOpacity(0.2)
+                                          : kBorder),
+                                  boxShadow: kShadowSoft,
+                                ),
+                                child: ListTile(
+                                  contentPadding:
+                                      const EdgeInsets.symmetric(
+                                          horizontal: 16, vertical: 8),
+                                  leading: Container(
+                                    width: 44,
+                                    height: 44,
+                                    decoration: BoxDecoration(
+                                      color: col.withOpacity(0.1),
+                                      borderRadius:
+                                          BorderRadius.circular(12),
+                                    ),
+                                    child: Icon(
+                                        _iconoTipo[tipo] ??
+                                            Icons.restaurant,
+                                        color: col,
+                                        size: 22),
+                                  ),
+                                  title: Text(tipo,
+                                      style: TextStyle(
+                                          fontWeight: FontWeight.w700,
+                                          fontSize: 14,
+                                          color: esModo
+                                              ? kTextMain
+                                              : kTextSub)),
+                                  subtitle: Text(
+                                      'Retirado: $fecha',
+                                      style: const TextStyle(
+                                          fontSize: 11.5,
+                                          color: kTextSub)),
+                                  trailing: _buildStatusChip(
+                                    esModo
+                                        ? 'A devolver'
+                                        : 'Fuera de modo',
+                                    esModo ? kGreen : kTextSub,
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+          ),
+        ]),
       ),
     );
   }
 }
 
+// ─────────────────────────────────────────────
+// PANTALLA: REGISTRAR ESTUDIANTE
+// ─────────────────────────────────────────────
 class RegistrarEstudiantePage extends StatefulWidget {
   final String codigoInicial;
   const RegistrarEstudiantePage({super.key, this.codigoInicial = ''});
-
   @override
-  State<RegistrarEstudiantePage> createState() => _RegistrarEstudiantePageState();
+  State<RegistrarEstudiantePage> createState() =>
+      _RegistrarEstudiantePageState();
 }
 
-class _RegistrarEstudiantePageState extends State<RegistrarEstudiantePage> {
+class _RegistrarEstudiantePageState
+    extends State<RegistrarEstudiantePage> {
   late final TextEditingController _codigoCtrl;
   final _nombreCtrl = TextEditingController();
   final _carnetCtrl = TextEditingController();
@@ -1423,7 +2051,8 @@ class _RegistrarEstudiantePageState extends State<RegistrarEstudiantePage> {
   @override
   void initState() {
     super.initState();
-    _codigoCtrl = TextEditingController(text: widget.codigoInicial);
+    _codigoCtrl =
+        TextEditingController(text: widget.codigoInicial);
     _carnetCtrl.text = widget.codigoInicial;
   }
 
@@ -1437,11 +2066,14 @@ class _RegistrarEstudiantePageState extends State<RegistrarEstudiantePage> {
   }
 
   Future<void> _guardarEstudiante() async {
-    if (_nombreCtrl.text.trim().isEmpty || _carnetCtrl.text.trim().isEmpty || _codigoCtrl.text.trim().isEmpty) {
-      mostrarNotificacionApp('Aviso', 'Por favor completa todos los campos obligatorios', esError: true);
+    if (_nombreCtrl.text.trim().isEmpty ||
+        _carnetCtrl.text.trim().isEmpty ||
+        _codigoCtrl.text.trim().isEmpty) {
+      mostrarNotificacionApp(
+          'Aviso', 'Completa todos los campos obligatorios',
+          esError: true);
       return;
     }
-
     setState(() => _guardando = true);
     try {
       final resp = await http.post(
@@ -1454,15 +2086,17 @@ class _RegistrarEstudiantePageState extends State<RegistrarEstudiantePage> {
           'grado': _gradoCtrl.text.trim(),
         }),
       );
-
       if (resp.statusCode == 200 || resp.statusCode == 201) {
-        mostrarNotificacionApp('Éxito', 'Estudiante registrado exitosamente');
+        mostrarNotificacionApp('Éxito', 'Estudiante registrado');
         if (mounted) Navigator.pop(context);
       } else {
-        mostrarNotificacionApp('Error', 'Error al registrar estudiante en el servidor', esError: true);
+        mostrarNotificacionApp('Error', 'Error al guardar en el servidor',
+            esError: true);
       }
     } catch (_) {
-      mostrarNotificacionApp('Error de Red', 'No se pudo conectar con el servidor backend', esError: true);
+      mostrarNotificacionApp(
+          'Error de Red', 'No se pudo conectar al servidor',
+          esError: true);
     } finally {
       if (mounted) setState(() => _guardando = false);
     }
@@ -1470,69 +2104,105 @@ class _RegistrarEstudiantePageState extends State<RegistrarEstudiantePage> {
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
     return Scaffold(
-      appBar: AppBar(
-        backgroundColor: cs.primary,
-        foregroundColor: Colors.white,
-        title: const Text('Registrar Nuevo Estudiante', style: TextStyle(fontWeight: FontWeight.bold)),
-        centerTitle: true,
-      ),
+      appBar: _buildAppBar('Registrar Nuevo Estudiante'),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(22),
-        child: Card(
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text('Información del Alumno', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                const SizedBox(height: 18),
-                TextField(
-                  controller: _nombreCtrl,
-                  decoration: const InputDecoration(labelText: 'Nombre completo', prefixIcon: Icon(Icons.person_outline)),
-                ),
-                const SizedBox(height: 16),
-                TextField(
-                  controller: _carnetCtrl,
-                  decoration: const InputDecoration(labelText: 'Número de Carnet', prefixIcon: Icon(Icons.badge_outlined)),
-                ),
-                const SizedBox(height: 16),
-                TextField(
-                  controller: _codigoCtrl,
-                  decoration: const InputDecoration(labelText: 'Código de barras', prefixIcon: Icon(Icons.qr_code_rounded)),
-                ),
-                const SizedBox(height: 16),
-                TextField(
-                  controller: _gradoCtrl,
-                  decoration: const InputDecoration(labelText: 'Grado / Sección (Ej: 2° Software)', prefixIcon: Icon(Icons.school_outlined)),
-                ),
-                const SizedBox(height: 30),
-                SizedBox(
-                  width: double.infinity,
-                  height: 52,
-                  child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: cs.primary,
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                    ),
-                    onPressed: _guardando ? null : _guardarEstudiante,
-                    child: Text(_guardando ? 'Guardando...' : 'Guardar Estudiante', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+        padding: const EdgeInsets.all(20),
+        child: Container(
+          decoration: BoxDecoration(
+            color: kSurface,
+            borderRadius: BorderRadius.circular(22),
+            border: Border.all(color: kBorder),
+            boxShadow: kShadowSoft,
+          ),
+          padding: const EdgeInsets.all(22),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(children: [
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: kPrimary.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(12),
                   ),
+                  child: const Icon(Icons.person_add_rounded,
+                      color: kPrimary, size: 22),
                 ),
-              ],
-            ),
+                const SizedBox(width: 14),
+                const Text('Información del Alumno',
+                    style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                        color: kTextMain)),
+              ]),
+              const SizedBox(height: 20),
+              const Divider(color: kBorder, height: 1),
+              const SizedBox(height: 20),
+              _buildField(_nombreCtrl, 'Nombre completo',
+                  Icons.person_outline),
+              const SizedBox(height: 14),
+              _buildField(_carnetCtrl, 'Número de Carnet',
+                  Icons.badge_outlined),
+              const SizedBox(height: 14),
+              _buildField(_codigoCtrl, 'Código de barras',
+                  Icons.qr_code_rounded),
+              const SizedBox(height: 14),
+              _buildField(_gradoCtrl,
+                  'Grado / Sección (Ej: 2° Software)',
+                  Icons.school_outlined),
+              const SizedBox(height: 28),
+              SizedBox(
+                width: double.infinity,
+                height: 52,
+                child: ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: kPrimary,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14)),
+                  ),
+                  onPressed:
+                      _guardando ? null : _guardarEstudiante,
+                  icon: _guardando
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                              color: Colors.white, strokeWidth: 2.5))
+                      : const Icon(Icons.save_rounded),
+                  label: Text(
+                      _guardando
+                          ? 'Guardando...'
+                          : 'Guardar Estudiante',
+                      style: const TextStyle(
+                          fontSize: 15, fontWeight: FontWeight.w700)),
+                ),
+              ),
+            ],
           ),
         ),
       ),
     );
   }
+
+  Widget _buildField(
+      TextEditingController ctrl, String label, IconData icon) {
+    return TextField(
+      controller: ctrl,
+      decoration: InputDecoration(
+        labelText: label,
+        prefixIcon: Icon(icon),
+      ),
+    );
+  }
 }
 
+// ─────────────────────────────────────────────
+// PANTALLA: INFORMES HISTÓRICOS
+// ─────────────────────────────────────────────
 class InformesPage extends StatefulWidget {
   const InformesPage({super.key});
-
   @override
   State<InformesPage> createState() => _InformesPageState();
 }
@@ -1542,10 +2212,15 @@ class _InformesPageState extends State<InformesPage> {
   bool _cargando = false;
   List<dynamic> _informe = [];
 
-  final _iconoTipo = const {
+  static const _iconoTipo = {
     'Plato': Icons.dinner_dining,
-    'Vaso': Icons.local_drink,
-    'Taza': Icons.coffee,
+    'Vaso': Icons.local_drink_rounded,
+    'Taza': Icons.coffee_rounded,
+  };
+  static const _colorTipo = {
+    'Plato': kBlue,
+    'Vaso': kAmber,
+    'Taza': kPrimary,
   };
 
   @override
@@ -1561,16 +2236,16 @@ class _InformesPageState extends State<InformesPage> {
   }
 
   Future<void> _seleccionarFecha(BuildContext context) async {
-    DateTime? fechaSeleccionada = await showDatePicker(
+    final picked = await showDatePicker(
       context: context,
       initialDate: DateTime.now(),
       firstDate: DateTime(2025),
       lastDate: DateTime(2030),
     );
-
-    if (fechaSeleccionada != null) {
+    if (picked != null) {
       setState(() {
-        _fechaController.text = fechaSeleccionada.toIso8601String().split('T')[0];
+        _fechaController.text =
+            picked.toIso8601String().split('T')[0];
       });
       _obtenerInformeHistorico();
     }
@@ -1579,16 +2254,15 @@ class _InformesPageState extends State<InformesPage> {
   Future<void> _obtenerInformeHistorico() async {
     final fecha = _fechaController.text.trim();
     if (fecha.isEmpty) return;
-
     setState(() => _cargando = true);
     try {
-      final url = Uri.parse('$kBaseUrl/informe/$fecha');
-      final response = await http.get(url);
-      
+      final response =
+          await http.get(Uri.parse('$kBaseUrl/informe/$fecha'));
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         setState(() {
-          _informe = data is List ? data : (data['informe'] ?? []);
+          _informe =
+              data is List ? data : (data['informe'] ?? []);
         });
       } else {
         setState(() => _informe = []);
@@ -1602,219 +2276,336 @@ class _InformesPageState extends State<InformesPage> {
 
   Future<void> _exportarPDF() async {
     if (_informe.isEmpty) return;
-
     final pdf = pw.Document();
     final fecha = _fechaController.text;
-
     pdf.addPage(
       pw.Page(
-        build: (pw.Context context) => pw.Column(
+        build: (pw.Context ctx) => pw.Column(
           crossAxisAlignment: pw.CrossAxisAlignment.start,
           children: [
-            pw.Text("Informe Diario - Cocina Escolar INFRAMEN", style: pw.TextStyle(fontSize: 20, fontWeight: pw.FontWeight.bold)),
+            pw.Text('Informe Diario — Cocina Escolar INFRAMEN',
+                style: pw.TextStyle(
+                    fontSize: 20,
+                    fontWeight: pw.FontWeight.bold)),
             pw.SizedBox(height: 6),
-            pw.Text("Fecha del reporte: $fecha", style: const pw.TextStyle(fontSize: 12)),
+            pw.Text('Fecha del reporte: $fecha',
+                style: const pw.TextStyle(fontSize: 12)),
             pw.SizedBox(height: 20),
             pw.TableHelper.fromTextArray(
-              headers: ['Utensilio', 'Entregados', 'Devueltos', 'Pendientes'],
-              data: _informe.map((item) => [
-                item['tipo'].toString(),
-                item['entregados'].toString(),
-                (item['devueltos'] ?? 0).toString(),
-                (item['pendientes'] ?? 0).toString()
-              ]).toList(),
+              headers: [
+                'Utensilio',
+                'Entregados',
+                'Devueltos',
+                'Pendientes'
+              ],
+              data: _informe
+                  .map((e) => [
+                        e['tipo'].toString(),
+                        e['entregados'].toString(),
+                        (e['devueltos'] ?? 0).toString(),
+                        (e['pendientes'] ?? 0).toString(),
+                      ])
+                  .toList(),
             ),
           ],
         ),
       ),
     );
-
     await Printing.layoutPdf(
-      onLayout: (format) async => pdf.save(),
+      onLayout: (_) async => pdf.save(),
       name: 'informe_cocina_$fecha.pdf',
     );
   }
 
   Future<void> _exportarExcel() async {
     if (_informe.isEmpty) return;
-
     try {
-      var excel = excel_pkg.Excel.createExcel();
-      excel_pkg.Sheet sheet = excel['Informe'];
-      excel.setDefaultSheet('Informe');
-
+      var ex = excel_pkg.Excel.createExcel();
+      excel_pkg.Sheet sheet = ex['Informe'];
+      ex.setDefaultSheet('Informe');
       sheet.appendRow([
-        excel_pkg.TextCellValue("Utensilio"),
-        excel_pkg.TextCellValue("Entregados"),
-        excel_pkg.TextCellValue("Devueltos"),
-        excel_pkg.TextCellValue("Pendientes"),
+        excel_pkg.TextCellValue('Utensilio'),
+        excel_pkg.TextCellValue('Entregados'),
+        excel_pkg.TextCellValue('Devueltos'),
+        excel_pkg.TextCellValue('Pendientes'),
       ]);
-
-      for (var item in _informe) {
+      for (final item in _informe) {
         sheet.appendRow([
           excel_pkg.TextCellValue(item['tipo'].toString()),
-          excel_pkg.IntCellValue(int.tryParse(item['entregados'].toString()) ?? 0),
-          excel_pkg.IntCellValue(int.tryParse((item['devueltos'] ?? 0).toString()) ?? 0),
-          excel_pkg.IntCellValue(int.tryParse((item['pendientes'] ?? 0).toString()) ?? 0),
+          excel_pkg.IntCellValue(
+              int.tryParse(item['entregados'].toString()) ?? 0),
+          excel_pkg.IntCellValue(
+              int.tryParse((item['devueltos'] ?? 0).toString()) ?? 0),
+          excel_pkg.IntCellValue(
+              int.tryParse((item['pendientes'] ?? 0).toString()) ??
+                  0),
         ]);
       }
-
-      final fileBytes = excel.save();
-      if (fileBytes != null) {
-        final directory = await getApplicationDocumentsDirectory();
-        final path = "${directory.path}/informe_cocina_${_fechaController.text}.xlsx";
-        final file = File(path);
-        await file.writeAsBytes(fileBytes, flush: true);
-
+      final bytes = ex.save();
+      if (bytes != null) {
+        final dir = await getApplicationDocumentsDirectory();
+        final path =
+            '${dir.path}/informe_cocina_${_fechaController.text}.xlsx';
+        await File(path).writeAsBytes(bytes, flush: true);
         if (!mounted) return;
-        mostrarNotificacionApp('Archivo Guardado', 'Excel almacenado correctamente');
+        mostrarNotificacionApp(
+            'Archivo Guardado', 'Excel guardado correctamente');
         OpenFile.open(path);
       }
     } catch (e) {
       if (!mounted) return;
-      mostrarNotificacionApp('Error', 'Error al guardar archivo Excel: $e', esError: true);
+      mostrarNotificacionApp('Error', 'Error al exportar Excel: $e',
+          esError: true);
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
     return Scaffold(
-      appBar: AppBar(
-        backgroundColor: cs.primary,
-        foregroundColor: Colors.white,
-        title: const Text('Exportación de Informes', style: TextStyle(fontWeight: FontWeight.bold)),
-        centerTitle: true,
-      ),
+      appBar: _buildAppBar('Exportación de Informes'),
       body: Padding(
-        padding: const EdgeInsets.all(22),
-        child: Column(
-          children: [
-            TextField(
-              controller: _fechaController,
-              decoration: InputDecoration(
-                labelText: 'Fecha (YYYY-MM-DD)',
-                prefixIcon: const Icon(Icons.calendar_today_outlined),
-                suffixIcon: IconButton(
-                  icon: Icon(Icons.event_note_rounded, color: cs.primary),
-                  onPressed: () => _seleccionarFecha(context),
-                  tooltip: 'Abrir Calendario',
-                ),
-              ),
+        padding: const EdgeInsets.all(20),
+        child: Column(children: [
+          // ── Selector fecha ───────────────────────
+          Container(
+            decoration: BoxDecoration(
+              color: kSurface,
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(color: kBorder),
+              boxShadow: kShadowSoft,
             ),
-            const SizedBox(height: 14),
-            SizedBox(
-              width: double.infinity,
-              height: 50,
-              child: ElevatedButton.icon(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: cs.primary,
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                ),
-                onPressed: _cargando ? null : _obtenerInformeHistorico,
-                icon: const Icon(Icons.search_rounded),
-                label: const Text('Obtener Informe', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
-              ),
-            ),
-            const SizedBox(height: 18),
-            Row(
+            padding: const EdgeInsets.all(18),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Expanded(
-                  child: ElevatedButton.icon(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFFC62828),
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                const Text('Selecciona la fecha',
+                    style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 13,
+                        color: kTextSub)),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: _fechaController,
+                  decoration: InputDecoration(
+                    labelText: 'Fecha (YYYY-MM-DD)',
+                    prefixIcon:
+                        const Icon(Icons.calendar_today_outlined),
+                    suffixIcon: IconButton(
+                      icon: const Icon(Icons.event_note_rounded,
+                          color: kPrimary),
+                      onPressed: () => _seleccionarFecha(context),
                     ),
-                    onPressed: _informe.isEmpty ? null : _exportarPDF,
-                    icon: const Icon(Icons.picture_as_pdf_rounded),
-                    label: const Text('Exportar PDF', style: TextStyle(fontWeight: FontWeight.bold)),
                   ),
                 ),
-                const SizedBox(width: 12),
-                Expanded(
+                const SizedBox(height: 14),
+                SizedBox(
+                  width: double.infinity,
+                  height: 48,
                   child: ElevatedButton.icon(
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF15803D),
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                      backgroundColor: kPrimary,
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12)),
                     ),
-                    onPressed: _informe.isEmpty ? null : _exportarExcel,
-                    icon: const Icon(Icons.table_chart_rounded),
-                    label: const Text('Exportar Excel', style: TextStyle(fontWeight: FontWeight.bold)),
+                    onPressed:
+                        _cargando ? null : _obtenerInformeHistorico,
+                    icon: _cargando
+                        ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(
+                                color: Colors.white, strokeWidth: 2))
+                        : const Icon(Icons.search_rounded),
+                    label: Text(
+                        _cargando ? 'Buscando...' : 'Obtener Informe',
+                        style: const TextStyle(
+                            fontWeight: FontWeight.w700)),
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 18),
-            const Divider(color: Color(0xFFE2E8F0)),
-            const SizedBox(height: 6),
-            Expanded(
-              child: _cargando
-                  ? const Center(child: CircularProgressIndicator())
-                  : _informe.isEmpty
-                      ? const Center(
-                          child: Text('Consulta una fecha para ver el detalle del informe',
-                              textAlign: TextAlign.center, style: TextStyle(color: Colors.grey)))
-                      : ListView.builder(
-                          itemCount: _informe.length,
-                          itemBuilder: (context, index) {
-                            final item = _informe[index];
-                            final tipo = item['tipo'] ?? 'Utensilio';
-                            final entregados = item['entregados'] ?? 0;
+          ),
 
-                            return Card(
-                              margin: const EdgeInsets.only(bottom: 12),
-                              child: ListTile(
-                                contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                                leading: CircleAvatar(
-                                  backgroundColor: cs.primary.withOpacity(0.1),
-                                  child: Icon(_iconoTipo[tipo] ?? Icons.history, color: cs.primary),
-                                ),
-                                title: Text("Utensilio: $tipo", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                                subtitle: Text("Entregados: $entregados", style: const TextStyle(fontSize: 13, color: Color(0xFF64748B))),
-                              ),
-                            );
-                          },
-                        ),
+          const SizedBox(height: 14),
+
+          // ── Botones export ───────────────────────
+          Row(children: [
+            Expanded(
+              child: ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFFC62828),
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14)),
+                ),
+                onPressed: _informe.isEmpty ? null : _exportarPDF,
+                icon: const Icon(Icons.picture_as_pdf_rounded),
+                label: const Text('PDF',
+                    style: TextStyle(fontWeight: FontWeight.w700)),
+              ),
             ),
-          ],
-        ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF15803D),
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14)),
+                ),
+                onPressed: _informe.isEmpty ? null : _exportarExcel,
+                icon: const Icon(Icons.table_chart_rounded),
+                label: const Text('Excel',
+                    style: TextStyle(fontWeight: FontWeight.w700)),
+              ),
+            ),
+          ]),
+
+          const SizedBox(height: 18),
+          const Divider(color: kBorder, height: 1),
+          const SizedBox(height: 14),
+
+          Expanded(
+            child: _cargando
+                ? const Center(
+                    child: CircularProgressIndicator(color: kPrimary))
+                : _informe.isEmpty
+                    ? Center(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.history_rounded,
+                                size: 52, color: kBorder),
+                            const SizedBox(height: 14),
+                            const Text(
+                              'Selecciona una fecha y\nobtén el informe',
+                              textAlign: TextAlign.center,
+                              style:
+                                  TextStyle(color: kTextSub, fontSize: 14),
+                            ),
+                          ],
+                        ),
+                      )
+                    : ListView.separated(
+                        itemCount: _informe.length,
+                        separatorBuilder: (_, __) =>
+                            const SizedBox(height: 10),
+                        itemBuilder: (_, i) {
+                          final item = _informe[i];
+                          final tipo = item['tipo'] ?? 'Utensilio';
+                          final entregados = item['entregados'] ?? 0;
+                          final devueltos = item['devueltos'] ?? 0;
+                          final pendientes =
+                              item['pendientes'] ?? 0;
+                          final col =
+                              _colorTipo[tipo] ?? kBlue;
+
+                          return Container(
+                            decoration: BoxDecoration(
+                              color: kSurface,
+                              borderRadius:
+                                  BorderRadius.circular(16),
+                              border: Border.all(color: kBorder),
+                              boxShadow: kShadowSoft,
+                            ),
+                            padding: const EdgeInsets.all(16),
+                            child: Row(children: [
+                              Container(
+                                width: 48,
+                                height: 48,
+                                decoration: BoxDecoration(
+                                  color: col.withOpacity(0.1),
+                                  borderRadius:
+                                      BorderRadius.circular(14),
+                                ),
+                                child: Icon(
+                                    _iconoTipo[tipo] ??
+                                        Icons.history,
+                                    color: col,
+                                    size: 24),
+                              ),
+                              const SizedBox(width: 14),
+                              Expanded(
+                                child: Text(tipo,
+                                    style: const TextStyle(
+                                        fontWeight: FontWeight.w700,
+                                        fontSize: 14,
+                                        color: kTextMain)),
+                              ),
+                              Column(
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.end,
+                                  children: [
+                                    _Stat(
+                                        label: 'Entregados',
+                                        value: '$entregados',
+                                        color: kBlue),
+                                    const SizedBox(height: 4),
+                                    _Stat(
+                                        label: 'Devueltos',
+                                        value: '$devueltos',
+                                        color: kGreen),
+                                    const SizedBox(height: 4),
+                                    _Stat(
+                                        label: 'Pendientes',
+                                        value: '$pendientes',
+                                        color: kPrimary),
+                                  ]),
+                            ]),
+                          );
+                        },
+                      ),
+          ),
+        ]),
       ),
     );
   }
 }
 
+// ─────────────────────────────────────────────
+// PANTALLA: ESCÁNER QR / CÓDIGO DE BARRAS
+// ─────────────────────────────────────────────
 class EscaneoPage extends StatefulWidget {
   final ValueChanged<String> onCodigoEscaneado;
   const EscaneoPage({super.key, required this.onCodigoEscaneado});
-
   @override
   State<EscaneoPage> createState() => _EscaneoPageState();
 }
 
-class _EscaneoPageState extends State<EscaneoPage> {
+class _EscaneoPageState extends State<EscaneoPage>
+    with SingleTickerProviderStateMixin {
   bool _scanned = false;
+  late AnimationController _pulse;
+
+  @override
+  void initState() {
+    super.initState();
+    _pulse = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 900),
+    )..repeat(reverse: true);
+  }
+
+  @override
+  void dispose() {
+    _pulse.dispose();
+    super.dispose();
+  }
 
   void _onDetect(BarcodeCapture capture) {
     if (_scanned) return;
-    final barcodes = capture.barcodes;
-    if (barcodes.isNotEmpty) {
-      final code = barcodes.first.rawValue;
-      if (code != null) {
-        _scanned = true;
-        setState(() {});
-
-        Future.delayed(const Duration(milliseconds: 400), () {
-          if (mounted) {
-            widget.onCodigoEscaneado(code);
-            Navigator.pop(context);
-          }
-        });
-      }
+    final code = capture.barcodes.firstOrNull?.rawValue;
+    if (code != null) {
+      _scanned = true;
+      setState(() {});
+      Future.delayed(const Duration(milliseconds: 500), () {
+        if (mounted) {
+          widget.onCodigoEscaneado(code);
+          Navigator.pop(context);
+        }
+      });
     }
   }
 
@@ -1823,53 +2614,120 @@ class _EscaneoPageState extends State<EscaneoPage> {
     return Scaffold(
       backgroundColor: Colors.black,
       appBar: AppBar(
-        title: const Text('ESCANEAR CÓDIGO', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-        backgroundColor: const Color(0xFF0F172A),
+        title: const Text('ESCANEAR CÓDIGO'),
+        backgroundColor: kPrimaryDeep,
         foregroundColor: Colors.white,
         centerTitle: true,
+        flexibleSpace: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              colors: [kPrimaryDeep, Color(0xFF1E293B)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+          ),
+        ),
       ),
       body: Stack(
         children: [
           MobileScanner(onDetect: _onDetect),
+
+          // Overlay oscuro en esquinas
+          ColorFiltered(
+            colorFilter: const ColorFilter.mode(
+                Colors.transparent, BlendMode.multiply),
+            child: Container(),
+          ),
+
+          // Marco de escaneo
           Center(
-            child: Container(
-              width: 280,
+            child: SizedBox(
+              width: 260,
               height: 200,
-              decoration: const BoxDecoration(
-                color: Colors.transparent,
-              ),
-              child: Stack(
-                children: [
-                  Positioned(top: 0, left: 0, child: _esquinaMarco()),
-                  Positioned(top: 0, right: 0, child: _esquinaMarco(rotar: 90)),
-                  Positioned(bottom: 0, left: 0, child: _esquinaMarco(rotar: 270)),
-                  Positioned(bottom: 0, right: 0, child: _esquinaMarco(rotar: 180)),
-                ],
+              child: Stack(children: [
+                // Línea de escaneo animada
+                AnimatedBuilder(
+                  animation: _pulse,
+                  builder: (_, __) => Positioned(
+                    top: _pulse.value * 160 + 20,
+                    left: 0,
+                    right: 0,
+                    child: Container(
+                      height: 2,
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [
+                            kPrimary.withOpacity(0),
+                            kPrimary,
+                            kPrimary.withOpacity(0),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                // Esquinas del marco
+                Positioned(
+                    top: 0,
+                    left: 0,
+                    child: _esquinaMarco()),
+                Positioned(
+                    top: 0,
+                    right: 0,
+                    child: _esquinaMarco(rotar: 90)),
+                Positioned(
+                    bottom: 0,
+                    left: 0,
+                    child: _esquinaMarco(rotar: 270)),
+                Positioned(
+                    bottom: 0,
+                    right: 0,
+                    child: _esquinaMarco(rotar: 180)),
+              ]),
+            ),
+          ),
+
+          // Texto guía
+          Positioned(
+            bottom: 80,
+            left: 0,
+            right: 0,
+            child: Center(
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 20, vertical: 10),
+                decoration: BoxDecoration(
+                  color: Colors.black54,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: const Text(
+                  'Apunta al código de barras o QR',
+                  style: TextStyle(color: Colors.white70, fontSize: 14),
+                ),
               ),
             ),
           ),
+
+          // Confirmación de escaneo
           if (_scanned)
             Container(
-              color: Colors.black54,
+              color: Colors.black60,
               child: Center(
                 child: Container(
-                  padding: const EdgeInsets.all(24),
+                  padding: const EdgeInsets.all(28),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF16A34A),
+                    color: kGreen,
                     shape: BoxShape.circle,
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.greenAccent.withOpacity(0.6),
-                        blurRadius: 20,
-                        spreadRadius: 5,
-                      )
+                        color: kGreen.withOpacity(0.5),
+                        blurRadius: 30,
+                        spreadRadius: 8,
+                      ),
                     ],
                   ),
-                  child: const Icon(
-                    Icons.check,
-                    color: Colors.white,
-                    size: 64,
-                  ),
+                  child: const Icon(Icons.check_rounded,
+                      color: Colors.white, size: 56),
                 ),
               ),
             ),
@@ -1882,12 +2740,12 @@ class _EscaneoPageState extends State<EscaneoPage> {
     return Transform.rotate(
       angle: rotar * 3.1416 / 180,
       child: Container(
-        width: 35,
-        height: 35,
+        width: 32,
+        height: 32,
         decoration: const BoxDecoration(
           border: Border(
-            top: BorderSide(color: Color(0xFFEF5350), width: 4),
-            left: BorderSide(color: Color(0xFFEF5350), width: 4),
+            top: BorderSide(color: kPrimary, width: 3.5),
+            left: BorderSide(color: kPrimary, width: 3.5),
           ),
         ),
       ),
