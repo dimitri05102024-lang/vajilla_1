@@ -3,9 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
 import 'package:mobile_scanner/mobile_scanner.dart';
-import 'package:fl_chart/fl_chart.dart'; // <--- Añadido para la Guía 7[cite: 10]
+import 'package:fl_chart/fl_chart.dart'; // <--- Paquete para gráficas
 
-// ⚠️ IP actualizada correctamente según tu ipconfig
+// ⚠️ IP actualizada correctamente según tu red
 const String kBaseUrl = 'http://10.198.197.181:3000';
 
 void main() => runApp(const CocinaEscolarApp());
@@ -23,7 +23,7 @@ class CocinaEscolarApp extends StatelessWidget {
         useMaterial3: true,
         colorScheme: ColorScheme.fromSeed(seedColor: seed),
         textTheme: GoogleFonts.poppinsTextTheme(),
-        scaffoldBackgroundColor: const Color(0xFFF5F5F5), // Fondo gris claro
+        scaffoldBackgroundColor: const Color(0xFFF5F5F5),
         inputDecorationTheme: const InputDecorationTheme(
           filled: true,
           fillColor: Colors.white,
@@ -43,7 +43,7 @@ class CocinaEscolarApp extends StatelessWidget {
 }
 
 // ==========================================
-// PÁGINA PRINCIPAL CON NAVEGACIÓN INFERIOR (5 PESTAÑAS)
+// NAVEGACIÓN PRINCIPAL (5 PESTAÑAS)
 // ==========================================
 class MainNavigatorPage extends StatefulWidget {
   const MainNavigatorPage({super.key});
@@ -58,8 +58,8 @@ class _MainNavigatorPageState extends State<MainNavigatorPage> {
   final List<Widget> _pages = [
     const HomePage(),
     const RegistrarPage(),
-    const EstadisticasPage(), // Pantalla dedicada a gráficas sin fecha
-    const InformesPage(),     // Histórico con selector de fecha
+    const EstadisticasPage(),
+    const InformesPage(),
     const ConfiguracionPage(),
   ];
 
@@ -69,7 +69,7 @@ class _MainNavigatorPageState extends State<MainNavigatorPage> {
       body: _pages[_currentIndex],
       bottomNavigationBar: Container(
         decoration: const BoxDecoration(
-          color: Color(0xFF212121), // Gris oscuro / casi negro
+          color: Color(0xFF212121),
           boxShadow: [
             BoxShadow(color: Colors.black26, blurRadius: 10, offset: Offset(0, -3))
           ],
@@ -80,31 +80,16 @@ class _MainNavigatorPageState extends State<MainNavigatorPage> {
           backgroundColor: Colors.transparent,
           elevation: 0,
           type: BottomNavigationBarType.fixed,
-          selectedItemColor: const Color(0xFFEF5350), // Rojo claro seleccionado
+          selectedItemColor: const Color(0xFFEF5350),
           unselectedItemColor: Colors.grey,
           selectedLabelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 10),
           unselectedLabelStyle: const TextStyle(fontSize: 10),
           items: const [
-            BottomNavigationBarItem(
-              icon: Icon(Icons.home_rounded),
-              label: 'Inicio',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.qr_code_scanner_rounded),
-              label: 'Registrar',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.pie_chart_rounded),
-              label: 'Gráficas',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.bar_chart_rounded),
-              label: 'Informes',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.settings_rounded),
-              label: 'Ajustes',
-            ),
+            BottomNavigationBarItem(icon: Icon(Icons.home_rounded), label: 'Inicio'),
+            BottomNavigationBarItem(icon: Icon(Icons.qr_code_scanner_rounded), label: 'Registrar'),
+            BottomNavigationBarItem(icon: Icon(Icons.pie_chart_rounded), label: 'Gráficas'),
+            BottomNavigationBarItem(icon: Icon(Icons.bar_chart_rounded), label: 'Informes'),
+            BottomNavigationBarItem(icon: Icon(Icons.settings_rounded), label: 'Ajustes'),
           ],
         ),
       ),
@@ -113,7 +98,7 @@ class _MainNavigatorPageState extends State<MainNavigatorPage> {
 }
 
 // ==========================================
-// 1. PÁGINA DE INICIO (Con Menú Lateral / Drawer)
+// 1. PÁGINA DE INICIO
 // ==========================================
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
@@ -127,7 +112,6 @@ class HomePage extends StatelessWidget {
         foregroundColor: Colors.white,
         title: const Text('Cocina Escolar', style: TextStyle(fontWeight: FontWeight.bold)),
         centerTitle: true,
-        elevation: 0,
         leading: Builder(
           builder: (context) => IconButton(
             icon: const Icon(Icons.menu_rounded),
@@ -153,10 +137,8 @@ class HomePage extends StatelessWidget {
                 children: [
                   Icon(Icons.restaurant_menu, size: 40, color: Colors.white),
                   SizedBox(height: 10),
-                  Text('Menú de Gestión',
-                      style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
-                  Text('INFRAMEN · Control de Vajilla',
-                      style: TextStyle(color: Colors.white70, fontSize: 12)),
+                  Text('Menú de Gestión', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+                  Text('INFRAMEN · Control de Vajilla', style: TextStyle(color: Colors.white70, fontSize: 12)),
                 ],
               ),
             ),
@@ -166,10 +148,7 @@ class HomePage extends StatelessWidget {
               subtitle: const Text('Escanear carnet y devolver'),
               onTap: () {
                 Navigator.pop(context);
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const PendientesPage()),
-                );
+                Navigator.push(context, MaterialPageRoute(builder: (_) => const PendientesPage()));
               },
             ),
             const Divider(),
@@ -191,30 +170,23 @@ class HomePage extends StatelessWidget {
                   end: Alignment.bottomRight,
                 ),
                 borderRadius: BorderRadius.circular(22),
-                boxShadow: [
-                  BoxShadow(color: cs.primary.withOpacity(0.3), blurRadius: 10, offset: const Offset(0, 5))
-                ],
+                boxShadow: [BoxShadow(color: cs.primary.withOpacity(0.3), blurRadius: 10, offset: const Offset(0, 5))],
               ),
               child: Row(
                 children: [
                   Container(
                     padding: const EdgeInsets.all(14),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.2),
-                      shape: BoxShape.circle,
-                    ),
+                    decoration: BoxDecoration(color: Colors.white.withOpacity(0.2), shape: BoxShape.circle),
                     child: const Icon(Icons.restaurant_menu, size: 36, color: Colors.white),
                   ),
                   const SizedBox(width: 16),
-                  Expanded(
+                  const Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text('¡Bienvenido al Sistema!',
-                            style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
-                        const SizedBox(height: 4),
-                        Text('INFRAMEN · Control de Vajilla',
-                            style: TextStyle(color: Colors.white.withOpacity(0.85), fontSize: 13)),
+                        Text('¡Bienvenido al Sistema!', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+                        SizedBox(height: 4),
+                        Text('INFRAMEN · Control Inteligente', style: TextStyle(color: Colors.white70, fontSize: 13)),
                       ],
                     ),
                   ),
@@ -222,8 +194,7 @@ class HomePage extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 25),
-            const Text('Panel de Acceso Rápido',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.black87)),
+            const Text('Panel de Acceso Rápido', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.black87)),
             const SizedBox(height: 15),
             Row(
               children: [
@@ -232,9 +203,7 @@ class HomePage extends StatelessWidget {
                     icon: Icons.qr_code_scanner,
                     titulo: 'Escanear Retiro',
                     color: const Color(0xFFC62828),
-                    onTap: () {
-                      Navigator.push(context, MaterialPageRoute(builder: (_) => const RegistrarPage()));
-                    },
+                    onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const RegistrarPage())),
                   ),
                 ),
                 const SizedBox(width: 15),
@@ -243,9 +212,7 @@ class HomePage extends StatelessWidget {
                     icon: Icons.warning_amber_rounded,
                     titulo: 'Ver Pendientes',
                     color: Colors.grey.shade800,
-                    onTap: () {
-                      Navigator.push(context, MaterialPageRoute(builder: (_) => const PendientesPage()));
-                    },
+                    onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const PendientesPage())),
                   ),
                 ),
               ],
@@ -275,7 +242,7 @@ class _AccesoCard extends StatelessWidget {
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(18),
-          boxShadow: [const BoxShadow(color: Colors.black12, blurRadius: 5, offset: Offset(0, 2))],
+          boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 5, offset: Offset(0, 2))],
           border: Border.all(color: Colors.grey.shade300),
         ),
         child: Column(
@@ -291,7 +258,7 @@ class _AccesoCard extends StatelessWidget {
 }
 
 // ==========================================
-// 2. PÁGINA DE REGISTRO DE RETIRO Y ESCANEO
+// 2. REGISTRO DE RETIRO
 // ==========================================
 class RegistrarPage extends StatefulWidget {
   const RegistrarPage({super.key});
@@ -314,11 +281,7 @@ class _RegistrarPageState extends State<RegistrarPage> {
 
   void _msg(String texto, {bool error = false}) {
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(texto),
-        backgroundColor: error ? Colors.red.shade800 : Colors.grey.shade800,
-        behavior: SnackBarBehavior.floating,
-      ),
+      SnackBar(content: Text(texto), backgroundColor: error ? Colors.red.shade800 : Colors.grey.shade800, behavior: SnackBarBehavior.floating),
     );
   }
 
@@ -341,20 +304,17 @@ class _RegistrarPageState extends State<RegistrarPage> {
     setState(() => _cargando = true);
     try {
       final estResp = await http.get(Uri.parse('$kBaseUrl/estudiante/$codigo'));
-      
       if (estResp.statusCode == 404) {
         if (!mounted) return;
         _mostrarDialogoEstudianteNoEncontrado(codigo);
         return;
       }
-
       if (estResp.statusCode != 200) {
         _msg('Error al conectar con el servidor', error: true);
         return;
       }
 
       final estudianteId = jsonDecode(estResp.body)['estudiante']['id'];
-
       final retResp = await http.post(
         Uri.parse('$kBaseUrl/retiro'),
         headers: {'Content-Type': 'application/json'},
@@ -379,20 +339,14 @@ class _RegistrarPageState extends State<RegistrarPage> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Estudiante no registrado'),
-        content: Text('El código "$codigo" no se encuentra en la base de datos. ¿Deseas registrar a este estudiante ahora?'),
+        content: Text('El código "$codigo" no se encuentra en la base de datos. ¿Deseas registrar al alumno ahora?'),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancelar', style: TextStyle(color: Colors.grey)),
-          ),
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancelar', style: TextStyle(color: Colors.grey))),
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFB71C1C), foregroundColor: Colors.white),
             onPressed: () {
               Navigator.pop(context);
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => RegistrarEstudiantePage(codigoInicial: codigo)),
-              );
+              Navigator.push(context, MaterialPageRoute(builder: (_) => RegistrarEstudiantePage(codigoInicial: codigo)));
             },
             child: const Text('Registrar Alumno'),
           ),
@@ -441,17 +395,10 @@ class _RegistrarPageState extends State<RegistrarPage> {
                 const SizedBox(height: 18),
                 DropdownButtonFormField<String>(
                   value: _tipo,
-                  decoration: const InputDecoration(
-                    labelText: 'Tipo de Utensilio',
-                    prefixIcon: Icon(Icons.category_outlined),
-                  ),
+                  decoration: const InputDecoration(labelText: 'Tipo de Utensilio', prefixIcon: Icon(Icons.category_outlined)),
                   items: _tipos.map((t) => DropdownMenuItem(
                     value: t,
-                    child: Row(children: [
-                      Icon(_iconoTipo[t], size: 20, color: cs.primary),
-                      const SizedBox(width: 8),
-                      Text(t),
-                    ]),
+                    child: Row(children: [Icon(_iconoTipo[t], size: 20, color: cs.primary), const SizedBox(width: 8), Text(t)]),
                   )).toList(),
                   onChanged: (v) => setState(() => _tipo = v!),
                 ),
@@ -482,7 +429,7 @@ class _RegistrarPageState extends State<RegistrarPage> {
 }
 
 // ==========================================
-// 3. PÁGINA DE ESTADÍSTICAS (Gráfica automática de hoy sin fecha)
+// 3. PÁGINA DE ESTADÍSTICAS (Con Selector de Gráfica: Pastel o Barras)
 // ==========================================
 class EstadisticasPage extends StatefulWidget {
   const EstadisticasPage({super.key});
@@ -495,6 +442,7 @@ class _EstadisticasPageState extends State<EstadisticasPage> {
   bool _cargando = false;
   List<dynamic> _informe = [];
   String _fechaHoy = '';
+  bool _mostrarBarras = false; // Alternar entre estilo pastel y barras
 
   final _iconoTipo = const {
     'Plato': Icons.dinner_dining,
@@ -513,7 +461,6 @@ class _EstadisticasPageState extends State<EstadisticasPage> {
     try {
       final url = Uri.parse('$kBaseUrl/informe');
       final response = await http.get(url);
-      
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         setState(() {
@@ -530,24 +477,78 @@ class _EstadisticasPageState extends State<EstadisticasPage> {
     }
   }
 
+  // Estilo Gráfica Pastel Mejorado
   List<PieChartSectionData> _generarDatosPastel() {
     return _informe.map((item) {
       final tipo = item['tipo'] ?? 'Utensilio';
       final entregados = double.tryParse(item['entregados'].toString()) ?? 0.0;
       
-      Color colorUtensilio = Colors.green;
-      if (tipo == 'Plato') colorUtensilio = Colors.blue;
-      if (tipo == 'Vaso') colorUtensilio = Colors.orange;
-      if (tipo == 'Taza') colorUtensilio = Colors.redAccent;
+      Color colorUtensilio = Colors.blue;
+      if (tipo == 'Plato') colorUtensilio = const Color(0xFF1976D2);
+      if (tipo == 'Vaso') colorUtensilio = const Color(0xFF00897B);
+      if (tipo == 'Taza') colorUtensilio = const Color(0xFF8E24AA);
 
       return PieChartSectionData(
         value: entregados,
         title: "$tipo\n($entregados)",
         color: colorUtensilio,
-        radius: 65,
-        titleStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white),
+        radius: 70,
+        badgeWidget: Icon(_iconoTipo[tipo], color: Colors.white, size: 16),
+        badgePositionPercentageOffset: .75,
+        titleStyle: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.white),
       );
     }).toList();
+  }
+
+  // Estilo Gráfica de Barras Modernas
+  BarChartData _generarDatosBarras() {
+    int index = 0;
+    List<Color> colores = [const Color(0xFF2E7D32), const Color(0xFF00897B), const Color(0xFF8E24AA), const Color(0xFFD32F2F)];
+
+    return BarChartData(
+      alignment: BarChartAlignment.spaceAround,
+      maxY: _informe.fold(5.0, (max, item) {
+        double val = double.tryParse(item['entregados'].toString()) ?? 0.0;
+        return val > max ? val + 2 : max;
+      }),
+      barTouchData: BarTouchData(enabled: true),
+      titlesData: FlTitlesData(
+        show: true,
+        bottomTitles: AxisTitles(
+          sideTitles: SideTitles(
+            showTitles: true,
+            getTitlesWidget: (double value, TitleMeta meta) {
+              int idx = value.toInt();
+              if (idx >= 0 && idx < _informe.length) {
+                return Padding(
+                  padding: const EdgeInsets.only(top: 8.0),
+                  child: Text(_informe[idx]['tipo'] ?? '', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                );
+              }
+              return const Text('');
+            },
+          ),
+        ),
+        leftTitles: const AxisTitles(sideTitles: SideTitles(showTitles: true, reservedSize: 28)),
+        topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+        rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+      ),
+      gridData: const FlGridData(show: true, drawVerticalLine: false),
+      borderData: FlBorderData(show: false),
+      barGroups: _informe.map((item) {
+        final val = double.tryParse(item['entregados'].toString()) ?? 0.0;
+        final color = colores[index % colores.length];
+        final rod = BarChartRodData(
+          toY: val,
+          color: color,
+          width: 22,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(8)),
+          backDrawRodData: BackgroundBarChartRodData(show: true, toY: 10, color: Colors.grey.shade200),
+        );
+        index++;
+        return BarChartGroupData(x: index - 1, barRods: [rod]);
+      }).toList(),
+    );
   }
 
   @override
@@ -561,45 +562,54 @@ class _EstadisticasPageState extends State<EstadisticasPage> {
         centerTitle: true,
         actions: [
           IconButton(
-            icon: const Icon(Icons.refresh_rounded),
-            onPressed: _obtenerEstadisticasHoy,
-            tooltip: 'Actualizar',
+            icon: Icon(_mostrarBarras ? Icons.pie_chart : Icons.bar_chart),
+            onPressed: () => setState(() => _mostrarBarras = !_mostrarBarras),
+            tooltip: 'Cambiar estilo de gráfica',
           ),
+          IconButton(icon: const Icon(Icons.refresh_rounded), onPressed: _obtenerEstadisticasHoy, tooltip: 'Actualizar'),
         ],
       ),
       body: Padding(
         padding: const EdgeInsets.all(20),
         child: Column(
           children: [
-            if (_fechaHoy.isNotEmpty)
-              Text('Fecha Actual: $_fechaHoy', style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.grey, fontSize: 13)),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                if (_fechaHoy.isNotEmpty)
+                  Text('Fecha: $_fechaHoy', style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.grey, fontSize: 13)),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(color: cs.primary.withOpacity(0.1), borderRadius: BorderRadius.circular(10)),
+                  child: Text(_mostrarBarras ? 'Estilo: Barras' : 'Estilo: Pastel', style: TextStyle(color: cs.primary, fontWeight: FontWeight.bold, fontSize: 12)),
+                ),
+              ],
+            ),
             const SizedBox(height: 15),
             SizedBox(
-              height: 200,
+              height: 220,
               child: _cargando
                   ? const Center(child: CircularProgressIndicator())
                   : _informe.isEmpty
-                      ? const Center(
-                          child: Text('No hay registros estadísticos para hoy',
-                              textAlign: TextAlign.center, style: TextStyle(color: Colors.grey)))
-                      : PieChart(
-                          PieChartData(
-                            sections: _generarDatosPastel(),
-                            centerSpaceRadius: 35,
-                            sectionsSpace: 2,
-                          ),
-                        ),
+                      ? const Center(child: Text('No hay registros estadísticos para hoy', style: TextStyle(color: Colors.grey)))
+                      : _mostrarBarras
+                          ? BarChart(_generarDatosBarras())
+                          : PieChart(
+                              PieChartData(
+                                sections: _generarDatosPastel(),
+                                centerSpaceRadius: 40,
+                                sectionsSpace: 3,
+                              ),
+                            ),
             ),
             const SizedBox(height: 15),
             const Divider(),
-            const SizedBox(height: 10),
+            const SizedBox(height: 5),
             Expanded(
               child: _cargando
                   ? const Center(child: CircularProgressIndicator())
                   : _informe.isEmpty
-                      ? const Center(
-                          child: Text('Sin detalles de movimientos para hoy',
-                              textAlign: TextAlign.center, style: TextStyle(color: Colors.grey)))
+                      ? const Center(child: Text('Sin detalles de movimientos para hoy', style: TextStyle(color: Colors.grey)))
                       : ListView.builder(
                           itemCount: _informe.length,
                           itemBuilder: (context, index) {
@@ -615,12 +625,11 @@ class _EstadisticasPageState extends State<EstadisticasPage> {
                               elevation: 1,
                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                               child: ListTile(
-                                contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
                                 leading: CircleAvatar(
                                   backgroundColor: cs.primary.withOpacity(0.1),
                                   child: Icon(_iconoTipo[tipo] ?? Icons.analytics, color: cs.primary),
                                 ),
-                                title: Text("Utensilio: $tipo", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                                title: Text("Utensilio: $tipo", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
                                 subtitle: Text("Entregados: $entregados | Devueltos: $devueltos | Pendientes: $pendientes", style: const TextStyle(fontSize: 12)),
                               ),
                             );
@@ -635,7 +644,7 @@ class _EstadisticasPageState extends State<EstadisticasPage> {
 }
 
 // ==========================================
-// 4. PÁGINA DE UTENSILIOS PENDIENTES Y DEVOLUCIÓN
+// 4. UTENSILIOS PENDIENTES Y DEVOLUCIÓN
 // ==========================================
 class PendientesPage extends StatefulWidget {
   const PendientesPage({super.key});
@@ -663,9 +672,7 @@ class _PendientesPageState extends State<PendientesPage> {
       MaterialPageRoute(
         builder: (context) => EscaneoPage(
           onCodigoEscaneado: (codigo) {
-            setState(() {
-              _carnetCtrl.text = codigo; 
-            });
+            setState(() => _carnetCtrl.text = codigo);
             obtenerPendientes();
           },
         ),
@@ -681,7 +688,6 @@ class _PendientesPageState extends State<PendientesPage> {
     try {
       final url = Uri.parse('$kBaseUrl/pendientes/$carnet');
       final response = await http.get(url);
-      
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         setState(() {
@@ -690,16 +696,12 @@ class _PendientesPageState extends State<PendientesPage> {
       } else {
         setState(() => pendientes = []);
         if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('No se encontraron pendientes para este carnet'), backgroundColor: Colors.red),
-        );
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('No se encontraron pendientes para este carnet'), backgroundColor: Colors.red));
       }
     } catch (_) {
       setState(() => pendientes = []);
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Error de conexión con el servidor'), backgroundColor: Colors.red),
-      );
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Error de conexión con el servidor'), backgroundColor: Colors.red));
     } finally {
       if (mounted) setState(() => _cargando = false);
     }
@@ -707,35 +709,26 @@ class _PendientesPageState extends State<PendientesPage> {
 
   Future<void> _registrarDevolucion(dynamic movimientoId, String tipo) async {
     if (movimientoId == null) return;
-
     try {
       final url = Uri.parse('$kBaseUrl/devolucion/$movimientoId');
       final response = await http.put(url);
-
       if (response.statusCode == 200) {
         if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('¡Devolución de $tipo registrada con éxito!'), backgroundColor: Colors.green.shade800),
-        );
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('¡Devolución de $tipo registrada con éxito!'), backgroundColor: Colors.green.shade800));
         obtenerPendientes();
       } else {
         if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('No se pudo registrar la devolución'), backgroundColor: Colors.red),
-        );
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('No se pudo registrar la devolución'), backgroundColor: Colors.red));
       }
     } catch (_) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Error de conexión al intentar devolver'), backgroundColor: Colors.red),
-      );
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Error de conexión al intentar devolver'), backgroundColor: Colors.red));
     }
   }
 
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-
     final pendientesFiltrados = pendientes.where((item) {
       final tipo = item['tipo'] ?? '';
       return tipo.toLowerCase() == _categoriaSeleccionada.toLowerCase();
@@ -776,11 +769,7 @@ class _PendientesPageState extends State<PendientesPage> {
               width: double.infinity,
               height: 48,
               child: ElevatedButton.icon(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: cs.primary,
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                ),
+                style: ElevatedButton.styleFrom(backgroundColor: cs.primary, foregroundColor: Colors.white, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14))),
                 onPressed: obtenerPendientes,
                 icon: const Icon(Icons.search_rounded),
                 label: const Text('Buscar Pendientes del Alumno', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
@@ -790,7 +779,7 @@ class _PendientesPageState extends State<PendientesPage> {
             if (_carnetCtrl.text.trim().isNotEmpty) ...[
               const Align(
                 alignment: Alignment.centerLeft,
-                child: Text('Filtrar por categoría del alumno:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                child: Text('Filtrar por categoría:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
               ),
               const SizedBox(height: 10),
               Row(
@@ -817,10 +806,7 @@ class _PendientesPageState extends State<PendientesPage> {
                             const SizedBox(height: 2),
                             Container(
                               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                              decoration: BoxDecoration(
-                                color: seleccionado ? Colors.white.withOpacity(0.2) : Colors.grey.shade100,
-                                borderRadius: BorderRadius.circular(10),
-                              ),
+                              decoration: BoxDecoration(color: seleccionado ? Colors.white.withOpacity(0.2) : Colors.grey.shade100, borderRadius: BorderRadius.circular(10)),
                               child: Text('$cantidad', style: TextStyle(color: seleccionado ? Colors.white : Colors.grey.shade700, fontSize: 10, fontWeight: FontWeight.bold)),
                             ),
                           ],
@@ -841,13 +827,9 @@ class _PendientesPageState extends State<PendientesPage> {
               child: _cargando
                   ? const Center(child: CircularProgressIndicator())
                   : _carnetCtrl.text.trim().isEmpty
-                      ? const Center(
-                          child: Text('Escanea o ingresa un carnet para ver y devolver los utensilios pendientes',
-                              textAlign: TextAlign.center, style: TextStyle(color: Colors.grey)))
+                      ? const Center(child: Text('Escanea o ingresa un carnet para ver pendientes', textAlign: TextAlign.center, style: TextStyle(color: Colors.grey)))
                       : pendientesFiltrados.isEmpty
-                          ? Center(
-                              child: Text('Este estudiante no tiene $_categoriaSeleccionada(s) pendientes',
-                                  textAlign: TextAlign.center, style: const TextStyle(color: Colors.green, fontWeight: FontWeight.bold)))
+                          ? Center(child: Text('Este estudiante no tiene $_categoriaSeleccionada(s) pendientes', textAlign: TextAlign.center, style: const TextStyle(color: Colors.green, fontWeight: FontWeight.bold)))
                           : ListView.builder(
                               itemCount: pendientesFiltrados.length,
                               itemBuilder: (context, index) {
@@ -862,12 +844,11 @@ class _PendientesPageState extends State<PendientesPage> {
                                   elevation: 1,
                                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                                   child: ListTile(
-                                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                                     leading: CircleAvatar(
                                       backgroundColor: const Color(0xFFFFEBEE),
                                       child: Icon(_iconoTipo[tipo] ?? Icons.restaurant, color: const Color(0xFFC62828)),
                                     ),
-                                    title: Text(tipo, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                                    title: Text(tipo, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
                                     subtitle: Text('Retirado: $fechaRetiro', style: const TextStyle(fontSize: 12)),
                                     trailing: ElevatedButton.icon(
                                       style: ElevatedButton.styleFrom(
@@ -893,7 +874,7 @@ class _PendientesPageState extends State<PendientesPage> {
 }
 
 // ==========================================
-// 5. PÁGINA PARA REGISTRAR NUEVO ESTUDIANTE
+// 5. REGISTRAR NUEVO ESTUDIANTE
 // ==========================================
 class RegistrarEstudiantePage extends StatefulWidget {
   final String codigoInicial;
@@ -918,9 +899,7 @@ class _RegistrarEstudiantePageState extends State<RegistrarEstudiantePage> {
   }
 
   void _msg(String texto, {bool error = false}) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(texto), backgroundColor: error ? Colors.red.shade800 : Colors.grey.shade800),
-    );
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(texto), backgroundColor: error ? Colors.red.shade800 : Colors.grey.shade800));
   }
 
   Future<void> _guardarEstudiante() async {
@@ -959,12 +938,7 @@ class _RegistrarEstudiantePageState extends State<RegistrarEstudiantePage> {
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     return Scaffold(
-      appBar: AppBar(
-        backgroundColor: cs.primary,
-        foregroundColor: Colors.white,
-        title: const Text('Registrar Nuevo Estudiante', style: TextStyle(fontWeight: FontWeight.bold)),
-        centerTitle: true,
-      ),
+      appBar: AppBar(backgroundColor: cs.primary, foregroundColor: Colors.white, title: const Text('Registrar Nuevo Estudiante', style: TextStyle(fontWeight: FontWeight.bold)), centerTitle: true),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
         child: Card(
@@ -978,35 +952,19 @@ class _RegistrarEstudiantePageState extends State<RegistrarEstudiantePage> {
               children: [
                 const Text('Información del Alumno', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                 const SizedBox(height: 15),
-                TextField(
-                  controller: _nombreCtrl,
-                  decoration: const InputDecoration(labelText: 'Nombre completo', prefixIcon: Icon(Icons.person_outline)),
-                ),
+                TextField(controller: _nombreCtrl, decoration: const InputDecoration(labelText: 'Nombre completo', prefixIcon: Icon(Icons.person_outline))),
                 const SizedBox(height: 15),
-                TextField(
-                  controller: _carnetCtrl,
-                  decoration: const InputDecoration(labelText: 'Número de Carnet', prefixIcon: Icon(Icons.badge_outlined)),
-                ),
+                TextField(controller: _carnetCtrl, decoration: const InputDecoration(labelText: 'Número de Carnet', prefixIcon: Icon(Icons.badge_outlined))),
                 const SizedBox(height: 15),
-                TextField(
-                  controller: _codigoCtrl,
-                  decoration: const InputDecoration(labelText: 'Código de barras', prefixIcon: Icon(Icons.qr_code)),
-                ),
+                TextField(controller: _codigoCtrl, decoration: const InputDecoration(labelText: 'Código de barras', prefixIcon: Icon(Icons.qr_code))),
                 const SizedBox(height: 15),
-                TextField(
-                  controller: _gradoCtrl,
-                  decoration: const InputDecoration(labelText: 'Grado / Seccion (Ej: 2° Software)', prefixIcon: Icon(Icons.school_outlined)),
-                ),
+                TextField(controller: _gradoCtrl, decoration: const InputDecoration(labelText: 'Grado / Sección (Ej: 2° Software)', prefixIcon: Icon(Icons.school_outlined))),
                 const SizedBox(height: 25),
                 SizedBox(
                   width: double.infinity,
                   height: 52,
                   child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: cs.primary,
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                    ),
+                    style: ElevatedButton.styleFrom(backgroundColor: cs.primary, foregroundColor: Colors.white, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14))),
                     onPressed: _guardando ? null : _guardarEstudiante,
                     child: Text(_guardando ? 'Guardando...' : 'Guardar Estudiante', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                   ),
@@ -1021,7 +979,7 @@ class _RegistrarEstudiantePageState extends State<RegistrarEstudiantePage> {
 }
 
 // ==========================================
-// 6. PÁGINA DE INFORMES HISTÓRICOS (Con calendario y gráfica - Guía 7)
+// 6. INFORMES HISTÓRICOS (Con selector de fecha y gráficas)
 // ==========================================
 class InformesPage extends StatefulWidget {
   const InformesPage({super.key});
@@ -1034,6 +992,7 @@ class _InformesPageState extends State<InformesPage> {
   final _fechaController = TextEditingController();
   bool _cargando = false;
   List<dynamic> _informe = [];
+  bool _mostrarBarras = false;
 
   final _iconoTipo = const {
     'Plato': Icons.dinner_dining,
@@ -1059,18 +1018,12 @@ class _InformesPageState extends State<InformesPage> {
 
   Future<void> _obtenerInformeHistorico() async {
     final fecha = _fechaController.text.trim();
-    if (fecha.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Por favor ingresa o selecciona una fecha (YYYY-MM-DD)'), backgroundColor: Colors.red),
-      );
-      return;
-    }
+    if (fecha.isEmpty) return;
 
     setState(() => _cargando = true);
     try {
       final url = Uri.parse('$kBaseUrl/informe/$fecha');
       final response = await http.get(url);
-      
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         setState(() {
@@ -1078,17 +1031,9 @@ class _InformesPageState extends State<InformesPage> {
         });
       } else {
         setState(() => _informe = []);
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Error al obtener informe histórico'), backgroundColor: Colors.red),
-        );
       }
     } catch (_) {
       setState(() => _informe = []);
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Error de conexión con el servidor'), backgroundColor: Colors.red),
-      );
     } finally {
       if (mounted) setState(() => _cargando = false);
     }
@@ -1098,18 +1043,12 @@ class _InformesPageState extends State<InformesPage> {
     return _informe.map((item) {
       final tipo = item['tipo'] ?? 'Utensilio';
       final entregados = double.tryParse(item['entregados'].toString()) ?? 0.0;
-      
-      Color colorUtensilio = Colors.green;
-      if (tipo == 'Plato') colorUtensilio = Colors.blue;
-      if (tipo == 'Vaso') colorUtensilio = Colors.orange;
-      if (tipo == 'Taza') colorUtensilio = Colors.redAccent;
-
       return PieChartSectionData(
         value: entregados,
         title: "$tipo\n($entregados)",
-        color: colorUtensilio,
+        color: tipo == 'Plato' ? Colors.blue : (tipo == 'Vaso' ? Colors.teal : Colors.purple),
         radius: 65,
-        titleStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white),
+        titleStyle: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.white),
       );
     }).toList();
   }
@@ -1123,6 +1062,13 @@ class _InformesPageState extends State<InformesPage> {
         foregroundColor: Colors.white,
         title: const Text('Informe Histórico', style: TextStyle(fontWeight: FontWeight.bold)),
         centerTitle: true,
+        actions: [
+          IconButton(
+            icon: Icon(_mostrarBarras ? Icons.pie_chart : Icons.bar_chart),
+            onPressed: () => setState(() => _mostrarBarras = !_mostrarBarras),
+            tooltip: 'Cambiar vista de gráfica',
+          ),
+        ],
       ),
       body: Padding(
         padding: const EdgeInsets.all(20),
@@ -1136,42 +1082,42 @@ class _InformesPageState extends State<InformesPage> {
                 suffixIcon: IconButton(
                   icon: Icon(Icons.event_note, color: cs.primary),
                   onPressed: () => _seleccionarFecha(context),
-                  tooltip: 'Abrir Calendario',
+                  tooltip: 'Calendario',
                 ),
-                border: const OutlineInputBorder(),
               ),
             ),
-            const SizedBox(height: 15),
+            const SizedBox(height: 12),
             SizedBox(
               width: double.infinity,
               height: 48,
               child: ElevatedButton.icon(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: cs.primary,
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                ),
+                style: ElevatedButton.styleFrom(backgroundColor: cs.primary, foregroundColor: Colors.white, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14))),
                 onPressed: _cargando ? null : _obtenerInformeHistorico,
                 icon: const Icon(Icons.search_rounded),
                 label: const Text('Consultar Informe', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
               ),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 15),
             SizedBox(
               height: 180,
               child: _cargando
                   ? const Center(child: CircularProgressIndicator())
                   : _informe.isEmpty
-                      ? const Center(
-                          child: Text('Selecciona una fecha para ver la gráfica estadística',
-                              textAlign: TextAlign.center, style: TextStyle(color: Colors.grey)))
-                      : PieChart(
-                          PieChartData(
-                            sections: _generarDatosPastel(),
-                            centerSpaceRadius: 35,
-                            sectionsSpace: 2,
-                          ),
-                        ),
+                      ? const Center(child: Text('Selecciona una fecha para ver la gráfica', style: TextStyle(color: Colors.grey)))
+                      : _mostrarBarras
+                          ? BarChart(
+                              BarChartData(
+                                barGroups: _informe.asMap().entries.map((e) {
+                                  double val = double.tryParse(e.value['entregados'].toString()) ?? 0.0;
+                                  return BarChartGroupData(x: e.key, barRods: [BarChartRodData(toY: val, color: Colors.teal, width: 20)]);
+                                }).toList(),
+                                titlesData: const FlTitlesData(
+                                  bottomTitles: AxisTitles(sideTitles: SideTitles(showTitles: true)),
+                                  leftTitles: AxisTitles(sideTitles: SideTitles(showTitles: true)),
+                                ),
+                              ),
+                            )
+                          : PieChart(PieChartData(sections: _generarDatosPastel(), centerSpaceRadius: 35)),
             ),
             const SizedBox(height: 10),
             const Divider(),
@@ -1180,9 +1126,7 @@ class _InformesPageState extends State<InformesPage> {
               child: _cargando
                   ? const Center(child: CircularProgressIndicator())
                   : _informe.isEmpty
-                      ? const Center(
-                          child: Text('No hay registros detallados para mostrar en lista',
-                              textAlign: TextAlign.center, style: TextStyle(color: Colors.grey)))
+                      ? const Center(child: Text('No hay registros detallados para mostrar', style: TextStyle(color: Colors.grey)))
                       : ListView.builder(
                           itemCount: _informe.length,
                           itemBuilder: (context, index) {
@@ -1196,12 +1140,8 @@ class _InformesPageState extends State<InformesPage> {
                               elevation: 1,
                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                               child: ListTile(
-                                contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-                                leading: CircleAvatar(
-                                  backgroundColor: cs.primary.withOpacity(0.1),
-                                  child: Icon(_iconoTipo[tipo] ?? Icons.history, color: cs.primary),
-                                ),
-                                title: Text("Utensilio: $tipo", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                                leading: CircleAvatar(backgroundColor: cs.primary.withOpacity(0.1), child: Icon(_iconoTipo[tipo] ?? Icons.history, color: cs.primary)),
+                                title: Text("Utensilio: $tipo", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
                                 subtitle: Text("Entregados: $entregados", style: const TextStyle(fontSize: 13)),
                               ),
                             );
@@ -1225,12 +1165,7 @@ class ConfiguracionPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     return Scaffold(
-      appBar: AppBar(
-        backgroundColor: cs.primary,
-        foregroundColor: Colors.white,
-        title: const Text('Configuración', style: TextStyle(fontWeight: FontWeight.bold)),
-        centerTitle: true,
-      ),
+      appBar: AppBar(backgroundColor: cs.primary, foregroundColor: Colors.white, title: const Text('Configuración', style: TextStyle(fontWeight: FontWeight.bold)), centerTitle: true),
       body: ListView(
         padding: const EdgeInsets.all(20),
         children: [
@@ -1254,17 +1189,9 @@ class ConfiguracionPage extends StatelessWidget {
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
             child: const Column(
               children: [
-                ListTile(
-                  leading: Icon(Icons.school, color: Color(0xFFB71C1C)),
-                  title: Text('Institución'),
-                  subtitle: Text('INFRAMEN · Desarrollo de Software'),
-                ),
+                ListTile(leading: Icon(Icons.school, color: Color(0xFFB71C1C)), title: Text('Institución'), subtitle: Text('INFRAMEN · Desarrollo de Software')),
                 Divider(height: 1),
-                ListTile(
-                  leading: Icon(Icons.info_outline, color: Color(0xFFB71C1C)),
-                  title: Text('Versión de la App'),
-                  subtitle: Text('1.0.0+1'),
-                ),
+                ListTile(leading: Icon(Icons.info_outline, color: Color(0xFFB71C1C)), title: Text('Versión de la App'), subtitle: Text('1.0.1+2')),
               ],
             ),
           ),
@@ -1275,7 +1202,7 @@ class ConfiguracionPage extends StatelessWidget {
 }
 
 // ==========================================
-// PANTALLA DE ESCANEO DE CÁMARA
+// PANTALLA DE ESCANEO
 // ==========================================
 class EscaneoPage extends StatefulWidget {
   final ValueChanged<String> onCodigoEscaneado;
@@ -1296,7 +1223,6 @@ class _EscaneoPageState extends State<EscaneoPage> {
       if (code != null) {
         _scanned = true;
         setState(() {});
-
         Future.delayed(const Duration(milliseconds: 500), () {
           if (mounted) {
             widget.onCodigoEscaneado(code);
@@ -1311,12 +1237,7 @@ class _EscaneoPageState extends State<EscaneoPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.black,
-      appBar: AppBar(
-        title: const Text('ESCANEAR CÓDIGO', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-        backgroundColor: const Color(0xFF212121),
-        foregroundColor: Colors.white,
-        centerTitle: true,
-      ),
+      appBar: AppBar(title: const Text('ESCANEAR CÓDIGO', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)), backgroundColor: const Color(0xFF212121), foregroundColor: Colors.white, centerTitle: true),
       body: Stack(
         children: [
           MobileScanner(onDetect: _onDetect),
@@ -1324,9 +1245,7 @@ class _EscaneoPageState extends State<EscaneoPage> {
             child: Container(
               width: 300,
               height: 200,
-              decoration: BoxDecoration(
-                border: Border.all(color: Colors.transparent),
-              ),
+              decoration: BoxDecoration(border: Border.all(color: Colors.transparent)),
               child: Stack(
                 children: [
                   Positioned(top: 0, left: 0, child: _esquinaMarco()),
@@ -1343,22 +1262,8 @@ class _EscaneoPageState extends State<EscaneoPage> {
               child: Center(
                 child: Container(
                   padding: const EdgeInsets.all(24),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFC62828),
-                    shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.redAccent.withOpacity(0.6),
-                        blurRadius: 20,
-                        spreadRadius: 5,
-                      )
-                    ],
-                  ),
-                  child: const Icon(
-                    Icons.check,
-                    color: Colors.white,
-                    size: 64,
-                  ),
+                  decoration: BoxDecoration(color: const Color(0xFFC62828), shape: BoxShape.circle),
+                  child: const Icon(Icons.check, color: Colors.white, size: 64),
                 ),
               ),
             ),
