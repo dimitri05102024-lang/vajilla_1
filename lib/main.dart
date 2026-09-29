@@ -641,7 +641,7 @@ class _RegistrarPageState extends State<RegistrarPage> {
                     border: Border.all(color: const Color(0xFFE2E8F0)),
                   ),
                   child: Row(
-                    mainAxisAlignment: MainAxisAlignment.between,
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween, // CORREGIDO AQUÍ (Era .between)
                     children: [
                       Row(
                         children: [
