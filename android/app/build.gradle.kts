@@ -6,7 +6,7 @@ plugins {
 
 android {
     namespace = "com.example.vajilla_1"
-    compileSdk = flutter.compileSdkVersion
+    compileSdk = flutter.compileSdkVersion()
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
@@ -14,12 +14,16 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
 
+    kotlinOptions {
+        jvmTarget = "17"
+    }
+
     defaultConfig {
         applicationId = "com.example.vajilla_1"
         minSdk = flutter.minSdkVersion
-        targetSdk = flutter.targetSdkVersion
-        versionCode = flutter.versionCode
-        versionName = flutter.versionName
+        targetSdk = flutter.targetSdkVersion()
+        versionCode = flutter.versionCode()
+        versionName = flutter.versionName()
     }
 
     buildTypes {
