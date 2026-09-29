@@ -509,7 +509,7 @@ class _EstadisticasPageState extends State<EstadisticasPage> {
       alignment: BarChartAlignment.spaceAround,
       maxY: _informe.fold(5.0, (max, item) {
         double val = double.tryParse(item['entregados'].toString()) ?? 0.0;
-        return val > max ? val + 2 : max;
+        return (val ?? 0) > max ? (val ?? 0) + 2 : max;
       }),
       barTouchData: BarTouchData(enabled: true),
       titlesData: FlTitlesData(
