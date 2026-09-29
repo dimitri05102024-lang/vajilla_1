@@ -16,7 +16,6 @@ const String kBaseUrl = 'http://10.198.197.181:3000';
 
 // Servicio Global de Notificaciones Locales
 final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
-// Clave global de navegación para mostrar notificaciones flotantes superiores estilo app
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 Future<void> main() async {
@@ -33,7 +32,9 @@ Future<void> main() async {
   runApp(const CocinaEscolarApp());
 }
 
-// Sistema de Notificación Flotante Superior (Estilo App Moderna)
+// ---------------------------------------------------------------------------
+// SISTEMA DE NOTIFICACIÓN FLOTANTE SUPERIOR (Diseño Premium Superior)
+// ---------------------------------------------------------------------------
 void mostrarNotificacionApp(String titulo, String cuerpo, {bool esError = false}) {
   final context = navigatorKey.currentContext;
   if (context == null) return;
@@ -44,15 +45,15 @@ void mostrarNotificacionApp(String titulo, String cuerpo, {bool esError = false}
       content: Row(
         children: [
           Container(
-            padding: const EdgeInsets.all(8),
+            padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.2),
+              color: Colors.white.withOpacity(0.18),
               shape: BoxShape.circle,
             ),
             child: Icon(
-              esError ? Icons.error_outline_rounded : Icons.check_circle_rounded,
+              esError ? Icons.warning_amber_rounded : Icons.verified_rounded,
               color: Colors.white,
-              size: 24,
+              size: 26,
             ),
           ),
           const SizedBox(width: 14),
@@ -64,26 +65,34 @@ void mostrarNotificacionApp(String titulo, String cuerpo, {bool esError = false}
                 Text(
                   titulo,
                   style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 15,
                     color: Colors.white,
+                    letterSpacing: 0.2,
                   ),
                 ),
-                const SizedBox(height: 2),
+                const SizedBox(height: 3),
                 Text(
                   cuerpo,
-                  style: const TextStyle(fontSize: 12, color: Colors.white70),
+                  style: const TextStyle(fontSize: 12.5, color: Colors.white70, height: 1.2),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ],
             ),
           ),
         ],
       ),
-      backgroundColor: esError ? const Color(0xFFDC2626) : const Color(0xFF0F172A),
+      backgroundColor: esError ? const Color(0xFFE53935) : const Color(0xFF0F172A),
       behavior: SnackBarBehavior.floating,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      margin: const EdgeInsets.fromLTRB(16, 10, 16, 0),
-      elevation: 6,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+      // Forzamos la posición en la parte superior con un margen superior destacado
+      margin: EdgeInsets.only(
+        top: MediaQuery.of(context).padding.top + 12,
+        left: 16,
+        right: 16,
+      ),
+      elevation: 8,
       duration: const Duration(seconds: 4),
     ),
   );
@@ -119,40 +128,41 @@ class CocinaEscolarApp extends StatelessWidget {
     const seed = Color(0xFFB71C1C);
     return MaterialApp(
       navigatorKey: navigatorKey,
-      title: 'Cocina Escolar',
+      title: 'Cocina Escolar INFRAMEN',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         useMaterial3: true,
         colorScheme: ColorScheme.fromSeed(
           seedColor: seed,
           primary: const Color(0xFFB71C1C),
-          secondary: const Color(0xFFD32F2F),
+          secondary: const Color(0xFFE53935),
           surface: Colors.white,
         ),
         textTheme: GoogleFonts.poppinsTextTheme(),
-        scaffoldBackgroundColor: const Color(0xFFF8FAFC),
+        scaffoldBackgroundColor: const Color(0xFFF4F6F9),
         cardTheme: CardTheme(
           elevation: 0,
+          color: Colors.white,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
-            side: const BorderSide(color: Color(0xFFE2E8F0)),
+            borderRadius: BorderRadius.circular(22),
+            side: const BorderSide(color: Color(0xFFE2E8F0), width: 1),
           ),
         ),
-        inputDecorationTheme: const InputDecorationTheme(
+        inputDecorationTheme: InputDecorationTheme(
           filled: true,
           fillColor: Colors.white,
-          contentPadding: EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+          contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
           border: OutlineInputBorder(
-            borderRadius: BorderRadius.all(Radius.circular(16)),
+            borderRadius: BorderRadius.circular(16),
             borderSide: BorderSide.none,
           ),
           enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.all(Radius.circular(16)),
-            borderSide: BorderSide(color: Color(0xFFE2E8F0)),
+            borderRadius: BorderRadius.circular(16),
+            borderSide: const BorderSide(color: Color(0xFFE2E8F0), width: 1),
           ),
           focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.all(Radius.circular(16)),
-            borderSide: BorderSide(color: Color(0xFFB71C1C), width: 1.5),
+            borderRadius: BorderRadius.circular(16),
+            borderSide: const BorderSide(color: Color(0xFFB71C1C), width: 1.8),
           ),
         ),
       ),
@@ -174,25 +184,26 @@ class EntregaModuloPage extends StatelessWidget {
       appBar: AppBar(
         backgroundColor: cs.primary,
         foregroundColor: Colors.white,
-        title: const Text('Módulo: Entrega de Alimentos', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+        title: const Text('Módulo: Entrega de Alimentos', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 17)),
         centerTitle: true,
+        elevation: 0,
       ),
       body: ListView(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.all(22),
         children: [
           _AccesoCard(
             icon: Icons.qr_code_scanner_rounded,
             titulo: 'Registrar Retiro',
-            subtitulo: 'Escanear carnet y prestar utensilio',
+            subtitulo: 'Escanear carnet y prestar utensilio de forma rápida',
             color: const Color(0xFFB71C1C),
             onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const RegistrarPage())),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 18),
           _AccesoCard(
             icon: Icons.assignment_return_rounded,
             titulo: 'Ver Pendientes y Devoluciones',
             subtitulo: 'Seleccionar modo de devolución del día y escanear',
-            color: const Color(0xFF1E293B),
+            color: const Color(0xFF0F172A),
             onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const PendientesPage())),
           ),
         ],
@@ -214,24 +225,25 @@ class InventarioModuloPage extends StatelessWidget {
       appBar: AppBar(
         backgroundColor: cs.primary,
         foregroundColor: Colors.white,
-        title: const Text('Módulo: Inventario', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+        title: const Text('Módulo: Inventario', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 17)),
         centerTitle: true,
+        elevation: 0,
       ),
       body: ListView(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.all(22),
         children: [
           _AccesoCard(
-            icon: Icons.pie_chart_rounded,
+            icon: Icons.donut_large_rounded,
             titulo: 'Estadísticas del Día',
-            subtitulo: 'Gráficos y disponibilidad actual',
+            subtitulo: 'Gráficos interactivos y disponibilidad actual en tiempo real',
             color: const Color(0xFF0284C7),
             onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const EstadisticasPage())),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 18),
           _AccesoCard(
             icon: Icons.picture_as_pdf_rounded,
             titulo: 'Informes Históricos (PDF y Excel)',
-            subtitulo: 'Consultar fechas anteriores y exportar reportes',
+            subtitulo: 'Consultar fechas anteriores y exportar reportes detallados',
             color: const Color(0xFF16A34A),
             onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const InformesPage())),
           ),
@@ -263,49 +275,48 @@ class HomePage extends StatelessWidget {
       appBar: AppBar(
         backgroundColor: cs.primary,
         foregroundColor: Colors.white,
-        title: const Text('Cocina Escolar INFRAMEN', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+        title: const Text('Cocina Escolar INFRAMEN', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 17)),
         centerTitle: true,
         elevation: 0,
       ),
       body: Center(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24),
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Container(
-                padding: const EdgeInsets.all(20),
+                padding: const EdgeInsets.all(22),
                 decoration: BoxDecoration(
                   color: Colors.white,
                   shape: BoxShape.circle,
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
-                      blurRadius: 15,
-                      offset: const Offset(0, 5),
+                      color: cs.primary.withOpacity(0.08),
+                      blurRadius: 20,
+                      offset: const Offset(0, 8),
                     )
                   ],
                 ),
-                child: _buildAppLogo(size: 75),
+                child: _buildAppLogo(size: 78),
               ),
-              const SizedBox(height: 18),
+              const SizedBox(height: 20),
               const Text(
                 'INFRAMEN',
                 style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
+                  fontSize: 26,
+                  fontWeight: FontWeight.w800,
                   color: Color(0xFF0F172A),
-                  letterSpacing: 2.0,
+                  letterSpacing: 2.5,
                 ),
               ),
               const SizedBox(height: 6),
               const Text(
-                'Sistema Integral de Gestión de Cafetín',
+                'Sistema Integral de Gestión de Cafetín Escolar',
                 textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 13, color: Color(0xFF64748B), fontWeight: FontWeight.w500),
+                style: TextStyle(fontSize: 13.5, color: Color(0xFF64748B), fontWeight: FontWeight.w500),
               ),
-              const SizedBox(height: 35),
-              // Pantalla principal estructurada con los dos botones principales requeridos
+              const SizedBox(height: 40),
               Container(
                 constraints: const BoxConstraints(maxWidth: 450),
                 child: Column(
@@ -359,17 +370,17 @@ class _AccesoCardPrincipal extends StatelessWidget {
   Widget build(BuildContext context) {
     return Material(
       color: Colors.white,
-      borderRadius: BorderRadius.circular(22),
-      elevation: 2,
+      borderRadius: BorderRadius.circular(24),
+      elevation: 1,
       shadowColor: Colors.black12,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(22),
+        borderRadius: BorderRadius.circular(24),
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 22, horizontal: 20),
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(22),
-            border: Border.all(color: const Color(0xFFE2E8F0)),
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(color: const Color(0xFFE2E8F0), width: 1),
           ),
           child: Row(
             children: [
@@ -377,9 +388,9 @@ class _AccesoCardPrincipal extends StatelessWidget {
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   color: color.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(18),
                 ),
-                child: Icon(icon, color: color, size: 32),
+                child: Icon(icon, color: color, size: 30),
               ),
               const SizedBox(width: 18),
               Expanded(
@@ -426,16 +437,16 @@ class _AccesoCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Material(
       color: Colors.white,
-      borderRadius: BorderRadius.circular(20),
+      borderRadius: BorderRadius.circular(22),
       elevation: 0,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(22),
         child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 22, horizontal: 16),
+          padding: const EdgeInsets.all(22),
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: const Color(0xFFE2E8F0)),
+            borderRadius: BorderRadius.circular(22),
+            border: Border.all(color: const Color(0xFFE2E8F0), width: 1),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -444,19 +455,19 @@ class _AccesoCard extends StatelessWidget {
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
                   color: color.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(14),
+                  borderRadius: BorderRadius.circular(16),
                 ),
                 child: Icon(icon, color: color, size: 28),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 18),
               Text(
                 titulo,
-                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Color(0xFF1E293B)),
+                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Color(0xFF0F172A)),
               ),
               const SizedBox(height: 4),
               Text(
                 subtitulo,
-                style: const TextStyle(fontSize: 11, color: Color(0xFF64748B)),
+                style: const TextStyle(fontSize: 12, color: Color(0xFF64748B), height: 1.3),
               ),
             ],
           ),
@@ -559,8 +570,8 @@ class _RegistrarPageState extends State<RegistrarPage> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text('Estudiante no registrado'),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
+        title: const Text('Estudiante no registrado', style: TextStyle(fontWeight: FontWeight.bold)),
         content: Text('El código "$codigo" no se encuentra en la base de datos. ¿Deseas registrar a este estudiante ahora?'),
         actions: [
           TextButton(
@@ -594,26 +605,26 @@ class _RegistrarPageState extends State<RegistrarPage> {
       appBar: AppBar(
         backgroundColor: cs.primary,
         foregroundColor: Colors.white,
-        title: const Text('Registrar Retiro de Vajilla', style: TextStyle(fontWeight: FontWeight.bold)),
+        title: const Text('Registrar Retiro', style: TextStyle(fontWeight: FontWeight.bold)),
         centerTitle: true,
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.all(22),
         child: Card(
           child: Padding(
-            padding: const EdgeInsets.all(22),
+            padding: const EdgeInsets.all(24),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('Control de Préstamo', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF1E293B))),
+                const Text('Control de Préstamo', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF0F172A))),
                 const SizedBox(height: 6),
                 const Text('Escanea el carnet o ingresa el código del alumno.', style: TextStyle(color: Colors.grey, fontSize: 13)),
-                const SizedBox(height: 16),
+                const SizedBox(height: 20),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFF1F5F9),
-                    borderRadius: BorderRadius.circular(14),
+                    color: const Color(0xFFF8FAFC),
+                    borderRadius: BorderRadius.circular(16),
                     border: Border.all(color: const Color(0xFFE2E8F0)),
                   ),
                   child: Row(
@@ -624,14 +635,14 @@ class _RegistrarPageState extends State<RegistrarPage> {
                           Icon(
                             _autoGuardado ? Icons.bolt_rounded : Icons.touch_app_rounded,
                             color: _autoGuardado ? const Color(0xFF16A34A) : Colors.grey,
-                            size: 22,
+                            size: 24,
                           ),
-                          const SizedBox(width: 10),
+                          const SizedBox(width: 12),
                           Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               const Text('Guardado automático al escanear', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xFF1E293B))),
-                              Text(_autoGuardado ? 'Se guarda al instante de escanear' : 'Requiere pulsar el botón manual', style: const TextStyle(fontSize: 11, color: Color(0xFF64748B))),
+                              Text(_autoGuardado ? 'Se procesa al instante' : 'Requiere pulsar el botón manual', style: const TextStyle(fontSize: 11, color: Color(0xFF64748B))),
                             ],
                           ),
                         ],
@@ -644,20 +655,20 @@ class _RegistrarPageState extends State<RegistrarPage> {
                     ],
                   ),
                 ),
-                const SizedBox(height: 20),
+                const SizedBox(height: 22),
                 TextField(
                   controller: _carnetCtrl,
                   decoration: InputDecoration(
                     labelText: 'Carnet / Código de barras',
                     prefixIcon: const Icon(Icons.badge_outlined),
                     suffixIcon: IconButton(
-                      icon: Icon(Icons.camera_alt, color: cs.primary),
+                      icon: Icon(Icons.camera_alt_rounded, color: cs.primary),
                       onPressed: _abrirEscaner,
                       tooltip: 'Escanear con cámara',
                     ),
                   ),
                 ),
-                const SizedBox(height: 18),
+                const SizedBox(height: 20),
                 DropdownButtonFormField<String>(
                   value: _tipo,
                   decoration: const InputDecoration(
@@ -668,13 +679,13 @@ class _RegistrarPageState extends State<RegistrarPage> {
                     value: t,
                     child: Row(children: [
                       Icon(_iconoTipo[t], size: 20, color: cs.primary),
-                      const SizedBox(width: 8),
-                      Text(t),
+                      const SizedBox(width: 10),
+                      Text(t, style: const TextStyle(fontWeight: FontWeight.w500)),
                     ]),
                   )).toList(),
                   onChanged: (v) => setState(() => _tipo = v!),
                 ),
-                const SizedBox(height: 25),
+                const SizedBox(height: 30),
                 SizedBox(
                   width: double.infinity,
                   height: 52,
@@ -682,7 +693,7 @@ class _RegistrarPageState extends State<RegistrarPage> {
                     style: ElevatedButton.styleFrom(
                       backgroundColor: cs.primary,
                       foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                       elevation: 2,
                     ),
                     onPressed: _cargando ? null : () => _procesarRetiro(_carnetCtrl.text.trim()),
@@ -756,7 +767,7 @@ class _EstadisticasPageState extends State<EstadisticasPage> {
 
     return List.generate(_informe.length, (i) {
       final isTouched = i == _touchedIndex;
-      final radius = isTouched ? 68.0 : 58.0;
+      final radius = isTouched ? 72.0 : 62.0;
       final item = _informe[i];
       final tipo = item['tipo'] ?? 'Utensilio';
       final entregados = double.tryParse(item['entregados'].toString()) ?? 0.0;
@@ -783,10 +794,10 @@ class _EstadisticasPageState extends State<EstadisticasPage> {
         title: '${porcentaje.toStringAsFixed(0)}%',
         radius: radius,
         titleStyle: TextStyle(
-          fontSize: isTouched ? 15.0 : 12.0,
+          fontSize: isTouched ? 16.0 : 13.0,
           fontWeight: FontWeight.bold,
           color: Colors.white,
-          shadows: const [Shadow(color: Colors.black26, blurRadius: 4)],
+          shadows: const [Shadow(color: Colors.black38, blurRadius: 4)],
         ),
         borderSide: isTouched ? const BorderSide(color: Colors.white, width: 3) : BorderSide.none,
       );
@@ -803,7 +814,7 @@ class _EstadisticasPageState extends State<EstadisticasPage> {
 
   Widget _buildLeyenda() {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       decoration: BoxDecoration(
         color: const Color(0xFFF8FAFC),
         borderRadius: BorderRadius.circular(16),
@@ -840,13 +851,13 @@ class _EstadisticasPageState extends State<EstadisticasPage> {
         ],
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.all(22),
         child: Column(
           children: [
             if (_fechaHoy.isNotEmpty)
               Container(
-                margin: const EdgeInsets.only(bottom: 16),
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                margin: const EdgeInsets.only(bottom: 18),
+                padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(20),
@@ -864,14 +875,14 @@ class _EstadisticasPageState extends State<EstadisticasPage> {
               ),
             Card(
               child: Padding(
-                padding: const EdgeInsets.all(20),
+                padding: const EdgeInsets.all(22),
                 child: Column(
                   children: [
                     const Text('Distribución de Vajilla Entregada',
-                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Color(0xFF0F172A))),
-                    const SizedBox(height: 20),
+                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Color(0xFF0F172A))),
+                    const SizedBox(height: 22),
                     SizedBox(
-                      height: 220,
+                      height: 230,
                       child: _cargando
                           ? const Center(child: CircularProgressIndicator())
                           : _informe.isEmpty
@@ -897,7 +908,7 @@ class _EstadisticasPageState extends State<EstadisticasPage> {
                                         ),
                                         borderData: FlBorderData(show: false),
                                         sectionsSpace: 4,
-                                        centerSpaceRadius: 55,
+                                        centerSpaceRadius: 60,
                                         sections: _generarDatosPastel(),
                                       ),
                                     ),
@@ -908,14 +919,14 @@ class _EstadisticasPageState extends State<EstadisticasPage> {
                                           Text(
                                             '$totalEntregados',
                                             style: const TextStyle(
-                                              fontSize: 26,
-                                              fontWeight: FontWeight.bold,
+                                              fontSize: 28,
+                                              fontWeight: FontWeight.w800,
                                               color: Color(0xFF0F172A),
                                             ),
                                           ),
                                           const Text(
                                             'Total',
-                                            style: TextStyle(fontSize: 12, color: Color(0xFF64748B)),
+                                            style: TextStyle(fontSize: 12, color: Color(0xFF64748B), fontWeight: FontWeight.w500),
                                           ),
                                         ],
                                       ),
@@ -923,13 +934,13 @@ class _EstadisticasPageState extends State<EstadisticasPage> {
                                   ],
                                 ),
                     ),
-                    const SizedBox(height: 20),
+                    const SizedBox(height: 22),
                     _buildLeyenda(),
                   ],
                 ),
               ),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 22),
             const Align(
               alignment: Alignment.centerLeft,
               child: Text('Detalle por Utensilio',
@@ -960,11 +971,11 @@ class _EstadisticasPageState extends State<EstadisticasPage> {
                               child: Row(
                                 children: [
                                   CircleAvatar(
-                                    radius: 22,
+                                    radius: 24,
                                     backgroundColor: cs.primary.withOpacity(0.08),
-                                    child: Icon(_iconoTipo[tipo] ?? Icons.analytics, color: cs.primary, size: 22),
+                                    child: Icon(_iconoTipo[tipo] ?? Icons.analytics, color: cs.primary, size: 24),
                                   ),
-                                  const SizedBox(width: 14),
+                                  const SizedBox(width: 16),
                                   Expanded(
                                     child: Column(
                                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -979,7 +990,7 @@ class _EstadisticasPageState extends State<EstadisticasPage> {
                                     crossAxisAlignment: CrossAxisAlignment.end,
                                     children: [
                                       Text('Devueltos: $devueltos', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF16A34A))),
-                                      const SizedBox(height: 2),
+                                      const SizedBox(height: 3),
                                       Text('Pendientes: $pendientes', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFFDC2626))),
                                     ],
                                   ),
@@ -1011,8 +1022,8 @@ class _ItemLeyenda extends StatelessWidget {
           height: 10,
           decoration: BoxDecoration(color: color, shape: BoxShape.circle),
         ),
-        const SizedBox(width: 6),
-        Text(texto, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF334155))),
+        const SizedBox(width: 8),
+        Text(texto, style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600, color: Color(0xFF334155))),
       ],
     );
   }
@@ -1061,7 +1072,7 @@ class _PendientesPageState extends State<PendientesPage> {
               _procesarDevolucionMasivaPorEscaneo(codigo);
             } else {
               _consultarPendientesManual();
-              mostrarNotificacionApp('Código Capturado', 'Carnet $codigo listo. Presiona consultar o realiza la acción deseada.');
+              mostrarNotificacionApp('Código Capturado', 'Carnet $codigo listo. Realiza la acción deseada.');
             }
           },
         ),
@@ -1188,18 +1199,18 @@ class _PendientesPageState extends State<PendientesPage> {
       appBar: AppBar(
         backgroundColor: cs.primary,
         foregroundColor: Colors.white,
-        title: const Text('Devolución por Modo Activo (Solo Hoy)', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+        title: const Text('Devolución por Modo Activo', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
         centerTitle: true,
       ),
       body: Padding(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.all(22),
         child: Column(
           children: [
             const Align(
               alignment: Alignment.centerLeft,
               child: Text('1. Selecciona el tipo(s) a devolver:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Color(0xFF1E293B))),
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: 12),
             Row(
               children: _tiposDisponibles.map((tipo) {
                 final seleccionado = _modosSeleccionados.contains(tipo);
@@ -1218,23 +1229,23 @@ class _PendientesPageState extends State<PendientesPage> {
                     },
                     child: Container(
                       margin: const EdgeInsets.symmetric(horizontal: 4),
-                      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 6),
+                      padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 6),
                       decoration: BoxDecoration(
                         color: seleccionado ? cs.primary : Colors.white,
-                        borderRadius: BorderRadius.circular(14),
+                        borderRadius: BorderRadius.circular(16),
                         border: Border.all(color: seleccionado ? cs.primary : const Color(0xFFE2E8F0)),
-                        boxShadow: seleccionado ? [BoxShadow(color: cs.primary.withOpacity(0.3), blurRadius: 6, offset: const Offset(0, 2))] : [],
+                        boxShadow: seleccionado ? [BoxShadow(color: cs.primary.withOpacity(0.25), blurRadius: 8, offset: const Offset(0, 3))] : [],
                       ),
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(_iconoTipo[tipo], color: seleccionado ? Colors.white : cs.primary, size: 24),
+                          Icon(_iconoTipo[tipo], color: seleccionado ? Colors.white : cs.primary, size: 26),
+                          const SizedBox(height: 8),
+                          Text(tipo, style: TextStyle(color: seleccionado ? Colors.white : Colors.black87, fontWeight: FontWeight.bold, fontSize: 12.5)),
                           const SizedBox(height: 6),
-                          Text(tipo, style: TextStyle(color: seleccionado ? Colors.white : Colors.black87, fontWeight: FontWeight.bold, fontSize: 12)),
-                          const SizedBox(height: 4),
                           Icon(
-                            seleccionado ? Icons.check_box_rounded : Icons.check_box_outline_blank_rounded,
-                            size: 14,
+                            seleccionado ? Icons.check_circle_rounded : Icons.radio_button_unchecked_rounded,
+                            size: 15,
                             color: seleccionado ? Colors.white70 : Colors.grey,
                           ),
                         ],
@@ -1244,12 +1255,12 @@ class _PendientesPageState extends State<PendientesPage> {
                 );
               }).toList(),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 18),
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
               decoration: BoxDecoration(
-                color: const Color(0xFFF1F5F9),
-                borderRadius: BorderRadius.circular(14),
+                color: const Color(0xFFF8FAFC),
+                borderRadius: BorderRadius.circular(16),
                 border: Border.all(color: const Color(0xFFE2E8F0)),
               ),
               child: Row(
@@ -1260,14 +1271,14 @@ class _PendientesPageState extends State<PendientesPage> {
                       Icon(
                         _autoDevolucion ? Icons.bolt_rounded : Icons.touch_app_rounded,
                         color: _autoDevolucion ? const Color(0xFF16A34A) : Colors.grey,
-                        size: 22,
+                        size: 24,
                       ),
-                      const SizedBox(width: 10),
+                      const SizedBox(width: 12),
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           const Text('Devolución automática al escanear', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xFF1E293B))),
-                          Text(_autoDevolucion ? 'Devuelve al instante al escanear' : 'Solo captura el NIE en el buscador', style: const TextStyle(fontSize: 11, color: Color(0xFF64748B))),
+                          Text(_autoDevolucion ? 'Devuelve al instante al escanear' : 'Solo captura el carnet', style: const TextStyle(fontSize: 11, color: Color(0xFF64748B))),
                         ],
                       ),
                     ],
@@ -1280,63 +1291,63 @@ class _PendientesPageState extends State<PendientesPage> {
                 ],
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 18),
             const Align(
               alignment: Alignment.centerLeft,
               child: Text('2. Ingresa o escanea el carnet del alumno:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Color(0xFF1E293B))),
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: 12),
             TextField(
               controller: _carnetCtrl,
               decoration: InputDecoration(
                 labelText: 'Carnet del Alumno',
                 prefixIcon: const Icon(Icons.badge_outlined),
                 suffixIcon: IconButton(
-                  icon: Icon(Icons.qr_code_scanner, color: cs.primary, size: 26),
+                  icon: Icon(Icons.qr_code_scanner_rounded, color: cs.primary, size: 26),
                   onPressed: _escanearParaDevolver,
                   tooltip: 'Escanear carnet',
                 ),
               ),
               onSubmitted: (_) => _consultarPendientesManual(),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 14),
             Row(
               children: [
                 Expanded(
                   child: ElevatedButton.icon(
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF1E293B),
+                      backgroundColor: const Color(0xFF0F172A),
                       foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                     ),
                     onPressed: _consultarPendientesManual,
                     icon: const Icon(Icons.search_rounded),
-                    label: const Text('Consultar Hoy'),
+                    label: const Text('Consultar Hoy', style: TextStyle(fontWeight: FontWeight.bold)),
                   ),
                 ),
-                const SizedBox(width: 10),
+                const SizedBox(width: 12),
                 Expanded(
                   child: ElevatedButton.icon(
                     style: ElevatedButton.styleFrom(
                       backgroundColor: cs.primary,
                       foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                     ),
                     onPressed: _escanearParaDevolver,
-                    icon: const Icon(Icons.camera_alt),
-                    label: const Text('Escanear / Devolver'),
+                    icon: const Icon(Icons.camera_alt_rounded),
+                    label: const Text('Escanear', style: TextStyle(fontWeight: FontWeight.bold)),
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 22),
             const Align(
               alignment: Alignment.centerLeft,
-              child: Text('Utensilios pendientes del día de hoy:', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Color(0xFF0F172A))),
+              child: Text('Utensilios pendientes del día de hoy:', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Color(0xFF0F172A))),
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: 12),
             Expanded(
               child: _cargando
                   ? const Center(child: CircularProgressIndicator())
@@ -1357,10 +1368,10 @@ class _PendientesPageState extends State<PendientesPage> {
                                 final esModoActivo = _modosSeleccionados.any((m) => m.toLowerCase() == tipo.toLowerCase());
 
                                 return Card(
-                                  margin: const EdgeInsets.only(bottom: 10),
+                                  margin: const EdgeInsets.only(bottom: 12),
                                   color: esModoActivo ? const Color(0xFFFFF5F5) : Colors.white,
                                   child: ListTile(
-                                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                                    contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
                                     leading: CircleAvatar(
                                       backgroundColor: esModoActivo ? const Color(0xFFFFEBEE) : Colors.grey.shade100,
                                       child: Icon(_iconoTipo[tipo] ?? Icons.restaurant, color: esModoActivo ? const Color(0xFFC62828) : Colors.grey),
@@ -1368,15 +1379,15 @@ class _PendientesPageState extends State<PendientesPage> {
                                     title: Text(tipo, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: esModoActivo ? Colors.black87 : Colors.grey)),
                                     subtitle: Text('Retirado hoy: $fechaRetiro', style: const TextStyle(fontSize: 12)),
                                     trailing: Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                                       decoration: BoxDecoration(
                                         color: esModoActivo ? const Color(0xFF16A34A).withOpacity(0.1) : Colors.grey.withOpacity(0.1),
-                                        borderRadius: BorderRadius.circular(8),
+                                        borderRadius: BorderRadius.circular(10),
                                       ),
                                       child: Text(
                                         esModoActivo ? 'A devolver' : 'Fuera de modo',
                                         style: TextStyle(
-                                          fontSize: 11,
+                                          fontSize: 11.5,
                                           fontWeight: FontWeight.bold,
                                           color: esModoActivo ? const Color(0xFF16A34A) : Colors.grey,
                                         ),
@@ -1468,35 +1479,35 @@ class _RegistrarEstudiantePageState extends State<RegistrarEstudiantePage> {
         centerTitle: true,
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.all(22),
         child: Card(
           child: Padding(
-            padding: const EdgeInsets.all(22),
+            padding: const EdgeInsets.all(24),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Text('Información del Alumno', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                const SizedBox(height: 15),
+                const SizedBox(height: 18),
                 TextField(
                   controller: _nombreCtrl,
                   decoration: const InputDecoration(labelText: 'Nombre completo', prefixIcon: Icon(Icons.person_outline)),
                 ),
-                const SizedBox(height: 15),
+                const SizedBox(height: 16),
                 TextField(
                   controller: _carnetCtrl,
                   decoration: const InputDecoration(labelText: 'Número de Carnet', prefixIcon: Icon(Icons.badge_outlined)),
                 ),
-                const SizedBox(height: 15),
+                const SizedBox(height: 16),
                 TextField(
                   controller: _codigoCtrl,
-                  decoration: const InputDecoration(labelText: 'Código de barras', prefixIcon: Icon(Icons.qr_code)),
+                  decoration: const InputDecoration(labelText: 'Código de barras', prefixIcon: Icon(Icons.qr_code_rounded)),
                 ),
-                const SizedBox(height: 15),
+                const SizedBox(height: 16),
                 TextField(
                   controller: _gradoCtrl,
                   decoration: const InputDecoration(labelText: 'Grado / Sección (Ej: 2° Software)', prefixIcon: Icon(Icons.school_outlined)),
                 ),
-                const SizedBox(height: 25),
+                const SizedBox(height: 30),
                 SizedBox(
                   width: double.infinity,
                   height: 52,
@@ -1504,7 +1515,7 @@ class _RegistrarEstudiantePageState extends State<RegistrarEstudiantePage> {
                     style: ElevatedButton.styleFrom(
                       backgroundColor: cs.primary,
                       foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                     ),
                     onPressed: _guardando ? null : _guardarEstudiante,
                     child: Text(_guardando ? 'Guardando...' : 'Guardar Estudiante', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
@@ -1656,7 +1667,7 @@ class _InformesPageState extends State<InformesPage> {
         await file.writeAsBytes(fileBytes, flush: true);
 
         if (!mounted) return;
-        mostrarNotificacionApp('Archivo Guardado', 'Excel almacenado en: informe_cocina_${_fechaController.text}.xlsx');
+        mostrarNotificacionApp('Archivo Guardado', 'Excel almacenado correctamente');
         OpenFile.open(path);
       }
     } catch (e) {
@@ -1676,7 +1687,7 @@ class _InformesPageState extends State<InformesPage> {
         centerTitle: true,
       ),
       body: Padding(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.all(22),
         child: Column(
           children: [
             TextField(
@@ -1685,28 +1696,28 @@ class _InformesPageState extends State<InformesPage> {
                 labelText: 'Fecha (YYYY-MM-DD)',
                 prefixIcon: const Icon(Icons.calendar_today_outlined),
                 suffixIcon: IconButton(
-                  icon: Icon(Icons.event_note, color: cs.primary),
+                  icon: Icon(Icons.event_note_rounded, color: cs.primary),
                   onPressed: () => _seleccionarFecha(context),
                   tooltip: 'Abrir Calendario',
                 ),
               ),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 14),
             SizedBox(
               width: double.infinity,
-              height: 48,
+              height: 50,
               child: ElevatedButton.icon(
                 style: ElevatedButton.styleFrom(
                   backgroundColor: cs.primary,
                   foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                 ),
                 onPressed: _cargando ? null : _obtenerInformeHistorico,
                 icon: const Icon(Icons.search_rounded),
-                label: const Text('Obtener Informe', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                label: const Text('Obtener Informe', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
               ),
             ),
-            const SizedBox(height: 15),
+            const SizedBox(height: 18),
             Row(
               children: [
                 Expanded(
@@ -1714,32 +1725,33 @@ class _InformesPageState extends State<InformesPage> {
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFFC62828),
                       foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                     ),
                     onPressed: _informe.isEmpty ? null : _exportarPDF,
-                    icon: const Icon(Icons.picture_as_pdf),
-                    label: const Text('Exportar PDF'),
+                    icon: const Icon(Icons.picture_as_pdf_rounded),
+                    label: const Text('Exportar PDF', style: TextStyle(fontWeight: FontWeight.bold)),
                   ),
                 ),
-                const SizedBox(width: 10),
+                const SizedBox(width: 12),
                 Expanded(
                   child: ElevatedButton.icon(
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF2E7D32),
+                      backgroundColor: const Color(0xFF15803D),
                       foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                     ),
                     onPressed: _informe.isEmpty ? null : _exportarExcel,
-                    icon: const Icon(Icons.table_chart),
-                    label: const Text('Exportar Excel'),
+                    icon: const Icon(Icons.table_chart_rounded),
+                    label: const Text('Exportar Excel', style: TextStyle(fontWeight: FontWeight.bold)),
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 15),
-            const Divider(),
+            const SizedBox(height: 18),
+            const Divider(color: Color(0xFFE2E8F0)),
+            const SizedBox(height: 6),
             Expanded(
               child: _cargando
                   ? const Center(child: CircularProgressIndicator())
@@ -1757,13 +1769,13 @@ class _InformesPageState extends State<InformesPage> {
                             return Card(
                               margin: const EdgeInsets.only(bottom: 12),
                               child: ListTile(
-                                contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                                contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
                                 leading: CircleAvatar(
                                   backgroundColor: cs.primary.withOpacity(0.1),
                                   child: Icon(_iconoTipo[tipo] ?? Icons.history, color: cs.primary),
                                 ),
                                 title: Text("Utensilio: $tipo", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                                subtitle: Text("Entregados: $entregados", style: const TextStyle(fontSize: 13)),
+                                subtitle: Text("Entregados: $entregados", style: const TextStyle(fontSize: 13, color: Color(0xFF64748B))),
                               ),
                             );
                           },
@@ -1812,7 +1824,7 @@ class _EscaneoPageState extends State<EscaneoPage> {
       backgroundColor: Colors.black,
       appBar: AppBar(
         title: const Text('ESCANEAR CÓDIGO', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-        backgroundColor: const Color(0xFF1E293B),
+        backgroundColor: const Color(0xFF0F172A),
         foregroundColor: Colors.white,
         centerTitle: true,
       ),
