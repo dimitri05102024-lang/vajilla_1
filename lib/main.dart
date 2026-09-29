@@ -156,81 +156,7 @@ class CocinaEscolarApp extends StatelessWidget {
           ),
         ),
       ),
-      home: const MainNavigatorPage(),
-    );
-  }
-}
-
-class MainNavigatorPage extends StatefulWidget {
-  const MainNavigatorPage({super.key});
-
-  @override
-  State<MainNavigatorPage> createState() => _MainNavigatorPageState();
-}
-
-class _MainNavigatorPageState extends State<MainNavigatorPage> {
-  int _currentIndex = 0;
-
-  final List<Widget> _pages = const [
-    HomePage(),
-    EntregaModuloPage(),
-    InventarioModuloPage(),
-    ConfiguracionPage(),
-  ];
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: AnimatedSwitcher(
-        duration: const Duration(milliseconds: 250),
-        child: _pages[_currentIndex],
-      ),
-      bottomNavigationBar: Container(
-        decoration: BoxDecoration(
-          color: const Color(0xFF1E293B),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.12),
-              blurRadius: 12,
-              offset: const Offset(0, -4),
-            )
-          ],
-        ),
-        child: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 6),
-            child: BottomNavigationBar(
-              currentIndex: _currentIndex,
-              onTap: (index) => setState(() => _currentIndex = index),
-              backgroundColor: Colors.transparent,
-              elevation: 0,
-              type: BottomNavigationBarType.fixed,
-              selectedItemColor: const Color(0xFFEF5350),
-              unselectedItemColor: const Color(0xFF94A3B8),
-              selectedLabelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 11),
-              unselectedLabelStyle: const TextStyle(fontSize: 11),
-              items: const [
-                BottomNavigationBarItem(
-                  icon: Icon(Icons.home_rounded),
-                  label: 'Inicio',
-                ),
-                BottomNavigationBarItem(
-                  icon: Icon(Icons.restaurant_rounded),
-                  label: 'Entrega',
-                ),
-                BottomNavigationBarItem(
-                  icon: Icon(Icons.inventory_2_rounded),
-                  label: 'Inventario',
-                ),
-                BottomNavigationBarItem(
-                  icon: Icon(Icons.settings_rounded),
-                  label: 'Ajustes',
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
+      home: const HomePage(),
     );
   }
 }
@@ -318,7 +244,7 @@ class InventarioModuloPage extends StatelessWidget {
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
 
-  Widget _buildAppLogo({double size = 85}) {
+  Widget _buildAppLogo({double size = 80}) {
     return Image.asset(
       'assets/icon/Logo_IN.PNG',
       width: size,
@@ -341,88 +267,140 @@ class HomePage extends StatelessWidget {
         centerTitle: true,
         elevation: 0,
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          children: [
-            Card(
-              elevation: 0,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(24),
-                side: const BorderSide(color: Color(0xFFE2E8F0)),
-              ),
-              child: Container(
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(vertical: 28, horizontal: 20),
+      body: Center(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [Colors.white, Color(0xFFFFF5F5)],
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                  ),
-                  borderRadius: BorderRadius.circular(24),
+                  color: Colors.white,
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.05),
+                      blurRadius: 15,
+                      offset: const Offset(0, 5),
+                    )
+                  ],
                 ),
+                child: _buildAppLogo(size: 75),
+              ),
+              const SizedBox(height: 18),
+              const Text(
+                'INFRAMEN',
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF0F172A),
+                  letterSpacing: 2.0,
+                ),
+              ),
+              const SizedBox(height: 6),
+              const Text(
+                'Sistema Integral de Gestión de Cafetín',
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 13, color: Color(0xFF64748B), fontWeight: FontWeight.w500),
+              ),
+              const SizedBox(height: 35),
+              // Pantalla principal estructurada con los dos botones principales requeridos
+              Container(
+                constraints: const BoxConstraints(maxWidth: 450),
                 child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    _buildAppLogo(size: 90),
-                    const SizedBox(height: 14),
-                    const Text(
-                      'INFRAMEN',
-                      style: TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF1E293B),
-                        letterSpacing: 1.5,
-                      ),
+                    _AccesoCardPrincipal(
+                      icon: Icons.inventory_2_rounded,
+                      titulo: 'Inventario',
+                      subtitulo: 'Informes históricos y estadísticas de vajilla',
+                      color: const Color(0xFF16A34A),
+                      onTap: () {
+                        Navigator.push(context, MaterialPageRoute(builder: (_) => const InventarioModuloPage()));
+                      },
                     ),
-                    const SizedBox(height: 4),
-                    const Text(
-                      'Sistema Integral de Gestión de Cafetín',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(fontSize: 13, color: Color(0xFF64748B), fontWeight: FontWeight.w500),
+                    const SizedBox(height: 18),
+                    _AccesoCardPrincipal(
+                      icon: Icons.restaurant_rounded,
+                      titulo: 'Entrega de Alimentos',
+                      subtitulo: 'Registro de retiros, pendientes y devoluciones',
+                      color: const Color(0xFFB71C1C),
+                      onTap: () {
+                        Navigator.push(context, MaterialPageRoute(builder: (_) => const EntregaModuloPage()));
+                      },
                     ),
                   ],
                 ),
               ),
-            ),
-            const SizedBox(height: 24),
-            const Align(
-              alignment: Alignment.centerLeft,
-              child: Text(
-                'Módulos de Operación',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _AccesoCardPrincipal extends StatelessWidget {
+  final IconData icon;
+  final String titulo;
+  final String subtitulo;
+  final Color color;
+  final VoidCallback onTap;
+
+  const _AccesoCardPrincipal({
+    required this.icon,
+    required this.titulo,
+    required this.subtitulo,
+    required this.color,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(22),
+      elevation: 2,
+      shadowColor: Colors.black12,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(22),
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 22, horizontal: 20),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(22),
+            border: Border.all(color: const Color(0xFFE2E8F0)),
+          ),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: color.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Icon(icon, color: color, size: 32),
               ),
-            ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                  child: _AccesoCard(
-                    icon: Icons.restaurant_rounded,
-                    titulo: 'Entrega de Alimentos',
-                    subtitulo: 'Retiros y devoluciones',
-                    color: const Color(0xFFB71C1C),
-                    onTap: () {
-                      Navigator.push(context, MaterialPageRoute(builder: (_) => const EntregaModuloPage()));
-                    },
-                  ),
+              const SizedBox(width: 18),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      titulo,
+                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Color(0xFF0F172A)),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      subtitulo,
+                      style: const TextStyle(fontSize: 12, color: Color(0xFF64748B)),
+                    ),
+                  ],
                 ),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: _AccesoCard(
-                    icon: Icons.inventory_2_rounded,
-                    titulo: 'Inventario',
-                    subtitulo: 'Informes y estadísticas',
-                    color: const Color(0xFF16A34A),
-                    onTap: () {
-                      Navigator.push(context, MaterialPageRoute(builder: (_) => const InventarioModuloPage()));
-                    },
-                  ),
-                ),
-              ],
-            ),
-          ],
+              ),
+              const Icon(Icons.arrow_forward_ios_rounded, size: 16, color: Color(0xFF94A3B8)),
+            ],
+          ),
         ),
       ),
     );
@@ -1054,7 +1032,7 @@ class _PendientesPageState extends State<PendientesPage> {
   final _carnetCtrl = TextEditingController();
   List<dynamic> pendientes = [];
   bool _cargando = false;
-  bool _autoDevolucion = true; // Interruptor para autodevolución al escanear
+  bool _autoDevolucion = true;
   
   final List<String> _modosSeleccionados = ['Plato']; 
   final List<String> _tiposDisponibles = const ['Plato', 'Vaso', 'Taza'];
@@ -1079,7 +1057,6 @@ class _PendientesPageState extends State<PendientesPage> {
             setState(() {
               _carnetCtrl.text = codigo; 
             });
-            // Si el modo automático de devolución está activo, realiza la devolución y consulta de inmediato
             if (_autoDevolucion) {
               _procesarDevolucionMasivaPorEscaneo(codigo);
             } else {
@@ -1268,7 +1245,6 @@ class _PendientesPageState extends State<PendientesPage> {
               }).toList(),
             ),
             const SizedBox(height: 16),
-            // Interruptor para alternar Devolución Automática vs Solo Capturar NIE al escanear
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
               decoration: BoxDecoration(
@@ -1795,58 +1771,6 @@ class _InformesPageState extends State<InformesPage> {
             ),
           ],
         ),
-      ),
-    );
-  }
-}
-
-class ConfiguracionPage extends StatelessWidget {
-  const ConfiguracionPage({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    return Scaffold(
-      appBar: AppBar(
-        backgroundColor: cs.primary,
-        foregroundColor: Colors.white,
-        title: const Text('Configuración', style: TextStyle(fontWeight: FontWeight.bold)),
-        centerTitle: true,
-      ),
-      body: ListView(
-        padding: const EdgeInsets.all(20),
-        children: const [
-          Text('Conexión con el Servidor', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey)),
-          SizedBox(height: 10),
-          Card(
-            child: ListTile(
-              leading: Icon(Icons.dns_rounded, color: Color(0xFFB71C1C)),
-              title: Text('URL Base del Backend'),
-              subtitle: Text(kBaseUrl),
-              trailing: Icon(Icons.check_circle, color: Colors.green),
-            ),
-          ),
-          SizedBox(height: 20),
-          Text('Información del Sistema', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey)),
-          SizedBox(height: 10),
-          Card(
-            child: Column(
-              children: [
-                ListTile(
-                  leading: Icon(Icons.school, color: Color(0xFFB71C1C)),
-                  title: Text('Institución'),
-                  subtitle: Text('INFRAMEN · Desarrollo de Software'),
-                ),
-                Divider(height: 1),
-                ListTile(
-                  leading: Icon(Icons.info_outline, color: Color(0xFFB71C1C)),
-                  title: Text('Versión de la App'),
-                  subtitle: Text('1.1.1 (Devolución Automática configurable)'),
-                ),
-              ],
-            ),
-          ),
-        ],
       ),
     );
   }
