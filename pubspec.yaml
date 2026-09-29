@@ -1,33 +1,51 @@
 name: cocina_escolar
-description: "Sistema Integral de Gestión de Cafetín - INFRAMEN"
-publish_to: "none"
-version: 1.0.0+1
+description: "Sistema Integral de Gestión de Cafetín para la Cocina Escolar INFRAMEN."
+publish_to: 'none'
+version: 1.1.1+2
 
 environment:
-  sdk: ^3.5.0
+  sdk: '>=3.0.0 <4.0.0'
 
 dependencies:
   flutter:
     sdk: flutter
-  google_fonts: ^6.2.1
-  http: ^1.2.1
+  
+  # Estilos y Tipografía
+  google_fonts: ^6.1.0
+
+  # Conexión HTTP con el Backend
+  http: ^1.2.0
+
+  # Escáner de códigos de barras / QR por cámara
   mobile_scanner: ^5.1.1
+
+  # Gráficos estadísticos (para la pantalla de estadísticas)
   fl_chart: ^0.68.0
+
+  # Notificaciones Locales (para avisos en tiempo real)
   flutter_local_notifications: ^17.2.2
-  pdf: ^3.10.8
-  printing: ^5.13.2
+
+  # Exportación de reportes en PDF y visualización/impresión
+  pdf: ^3.10.7
+  printing: ^5.13.1
+
+  # Exportación de reportes en Excel
   excel: ^4.0.0
-  path_provider: ^2.1.3
+
+  # Gestión de rutas y almacenamiento local para archivos
+  path_provider: ^2.1.2
+
+  # Apertura de archivos generados (PDF/Excel) directamente en el dispositivo
   open_file_plus: ^3.4.0
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  flutter_lints: ^4.0.0
+  flutter_lints: ^3.0.0
 
 flutter:
   uses-material-design: true
 
-  # Configuración de recursos (para el logotipo de la app)
+  # Asegúrate de colocar tu logo en esta ruta si deseas que aparezca en la pantalla de inicio
   assets:
-    - assets/icon/
+    - assets/icon/Logo_IN.PNG
