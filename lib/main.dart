@@ -16,11 +16,12 @@ const String kBaseUrl = 'http://10.198.197.181:3000';
 
 // Servicio Global de Notificaciones Locales
 final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
+// Clave global de navegación para mostrar notificaciones flotantes superiores estilo app
+final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Configuración de inicialización para Android
   const AndroidInitializationSettings initializationSettingsAndroid =
       AndroidInitializationSettings('@mipmap/ic_launcher');
 
@@ -30,6 +31,62 @@ Future<void> main() async {
 
   await flutterLocalNotificationsPlugin.initialize(initializationSettings);
   runApp(const CocinaEscolarApp());
+}
+
+// Sistema de Notificación Flotante Superior (Estilo App Moderna)
+void mostrarNotificacionApp(String titulo, String cuerpo, {bool esError = false}) {
+  final context = navigatorKey.currentContext;
+  if (context == null) return;
+
+  ScaffoldMessenger.of(context).removeCurrentSnackBar();
+  ScaffoldMessenger.of(context).showSnackBar(
+    SnackBar(
+      content: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.2),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              esError ? Icons.error_outline_rounded : Icons.check_circle_rounded,
+              color: Colors.white,
+              size: 24,
+            ),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  titulo,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                    color: Colors.white,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  cuerpo,
+                  style: const TextStyle(fontSize: 12, color: Colors.white70),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+      backgroundColor: esError ? const Color(0xFFDC2626) : const Color(0xFF0F172A),
+      behavior: SnackBarBehavior.floating,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      margin: const EdgeInsets.fromLTRB(16, 10, 16, 0), // Aparece arriba simulando notificación push
+      elevation: 6,
+      duration: const Duration(seconds: 4),
+    ),
+  );
 }
 
 Future<void> mostrarNotificacionLocal(String titulo, String cuerpo) async {
@@ -61,6 +118,7 @@ class CocinaEscolarApp extends StatelessWidget {
   Widget build(BuildContext context) {
     const seed = Color(0xFFB71C1C);
     return MaterialApp(
+      navigatorKey: navigatorKey,
       title: 'Cocina Escolar',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
@@ -207,7 +265,7 @@ class EntregaModuloPage extends StatelessWidget {
           _AccesoCard(
             icon: Icons.assignment_return_rounded,
             titulo: 'Ver Pendientes y Devoluciones',
-            subtitulo: 'Seleccionar modo de devolución y escanear carnet',
+            subtitulo: 'Seleccionar modo de devolución del día y escanear',
             color: const Color(0xFF1E293B),
             onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const PendientesPage())),
           ),
@@ -430,6 +488,9 @@ class _AccesoCard extends StatelessWidget {
   }
 }
 
+// ==========================================
+// PANTALLA: REGISTRAR RETIRO (CON MODO AUTOMÁTICO/MANUAL)
+// ==========================================
 class RegistrarPage extends StatefulWidget {
   const RegistrarPage({super.key});
 
@@ -441,6 +502,7 @@ class _RegistrarPageState extends State<RegistrarPage> {
   final _carnetCtrl = TextEditingController();
   String _tipo = 'Plato';
   bool _cargando = false;
+  bool _autoGuardado = true; // Interruptor para autoguardado al escanear
 
   final _tipos = const ['Plato', 'Vaso', 'Taza'];
   final _iconoTipo = const {
@@ -455,17 +517,6 @@ class _RegistrarPageState extends State<RegistrarPage> {
     super.dispose();
   }
 
-  void _msg(String texto, {bool error = false}) {
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(texto),
-        backgroundColor: error ? const Color(0xFFC62828) : const Color(0xFF2E7D32),
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
-  }
-
   void _abrirEscaner() {
     Navigator.push(
       context,
@@ -473,7 +524,12 @@ class _RegistrarPageState extends State<RegistrarPage> {
         builder: (context) => EscaneoPage(
           onCodigoEscaneado: (codigo) {
             setState(() => _carnetCtrl.text = codigo);
-            _procesarRetiro(codigo);
+            // Si el modo automático está activo, procesa de inmediato al escanear
+            if (_autoGuardado) {
+              _procesarRetiro(codigo);
+            } else {
+              mostrarNotificacionApp('Código Capturado', 'Carnet $codigo listo. Presiona "Registrar Retiro".');
+            }
           },
         ),
       ),
@@ -493,7 +549,7 @@ class _RegistrarPageState extends State<RegistrarPage> {
       }
 
       if (estResp.statusCode != 200) {
-        _msg('Error al conectar con el servidor', error: true);
+        mostrarNotificacionApp('Error de Servidor', 'No se pudo conectar con el servidor', esError: true);
         return;
       }
 
@@ -506,17 +562,17 @@ class _RegistrarPageState extends State<RegistrarPage> {
       );
 
       if (retResp.statusCode == 200 || retResp.statusCode == 201) {
-        _msg('¡Retiro de $_tipo registrado con éxito!');
+        mostrarNotificacionApp('¡Préstamo Exitoso!', 'Se registró un retiro de $_tipo para el carnet $codigo');
         await mostrarNotificacionLocal(
           'Retiro Registrado',
           'Se registró un préstamo de $_tipo para el carnet $codigo',
         );
         _carnetCtrl.clear();
       } else {
-        _msg('Error al registrar el retiro', error: true);
+        mostrarNotificacionApp('Error', 'Error al registrar el retiro', esError: true);
       }
     } catch (_) {
-      _msg('No se pudo establecer conexión con el servidor', error: true);
+      mostrarNotificacionApp('Error de Red', 'No se pudo establecer conexión con el servidor', esError: true);
     } finally {
       if (mounted) setState(() => _cargando = false);
     }
@@ -575,6 +631,43 @@ class _RegistrarPageState extends State<RegistrarPage> {
                 const Text('Control de Préstamo', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF1E293B))),
                 const SizedBox(height: 6),
                 const Text('Escanea el carnet o ingresa el código del alumno.', style: TextStyle(color: Colors.grey, fontSize: 13)),
+                const SizedBox(height: 16),
+                // Interruptor para alternar Modo Automático o Manual al escanear
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF1F5F9),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: const Color(0xFFE2E8F0)),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.between,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(
+                            _autoGuardado ? Icons.bolt_rounded : Icons.touch_app_rounded,
+                            color: _autoGuardado ? const Color(0xFF16A34A) : Colors.grey,
+                            size: 22,
+                          ),
+                          const SizedBox(width: 10),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text('Guardado automático al escanear', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xFF1E293B))),
+                              Text(_autoGuardado ? 'Se guarda al instante de escanear' : 'Requiere pulsar el botón manual', style: const TextStyle(fontSize: 11, color: Color(0xFF64748B))),
+                            ],
+                          ),
+                        ],
+                      ),
+                      Switch(
+                        value: _autoGuardado,
+                        activeColor: const Color(0xFF16A34A),
+                        onChanged: (val) => setState(() => _autoGuardado = val),
+                      ),
+                    ],
+                  ),
+                ),
                 const SizedBox(height: 20),
                 TextField(
                   controller: _carnetCtrl,
@@ -950,7 +1043,7 @@ class _ItemLeyenda extends StatelessWidget {
 }
 
 // ==========================================
-// PANTALLA DE PENDIENTES Y DEVOLUCIÓN POR MODO SELECCIONADO
+// PANTALLA: DEVOLUCIÓN DE PENDIENTES (FILTRA SOLO DEL DÍA ACTUAL)
 // ==========================================
 class PendientesPage extends StatefulWidget {
   const PendientesPage({super.key});
@@ -964,9 +1057,7 @@ class _PendientesPageState extends State<PendientesPage> {
   List<dynamic> pendientes = [];
   bool _cargando = false;
   
-  // Modos de selección múltiple/individual de utensilios a devolver
-  final List<String> _modosSeleccionados = ['Plato']; // Por defecto inicia seleccionando plato
-
+  final List<String> _modosSeleccionados = ['Plato']; 
   final List<String> _tiposDisponibles = const ['Plato', 'Vaso', 'Taza'];
   final Map<String, IconData> _iconoTipo = const {
     'Plato': Icons.dinner_dining,
@@ -1007,35 +1098,35 @@ class _PendientesPageState extends State<PendientesPage> {
       
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
+        final List<dynamic> listaCruda = data is List ? data : (data['pendientes'] ?? []);
+        
+        // Filtro estricto: Solo se muestran los pendientes prestados el día de HOY
+        final hoyStr = DateTime.now().toString().split(' ')[0]; // Formato YYYY-MM-DD
+        final listaDeHoy = listaCruda.where((item) {
+          final fechaRetiro = (item['fecha_retiro'] ?? '').toString();
+          return fechaRetiro.startsWith(hoyStr);
+        }).toList();
+
         setState(() {
-          pendientes = data is List ? data : (data['pendientes'] ?? []);
+          pendientes = listaDeHoy;
         });
       } else {
         setState(() => pendientes = []);
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('No se encontraron pendientes para este carnet'), backgroundColor: Colors.red),
-        );
+        mostrarNotificacionApp('Aviso', 'No se encontraron pendientes para este carnet', esError: true);
       }
     } catch (_) {
       setState(() => pendientes = []);
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Error de conexión con el servidor'), backgroundColor: Colors.red),
-      );
+      mostrarNotificacionApp('Error', 'Error de conexión con el servidor', esError: true);
     } finally {
       if (mounted) setState(() => _cargando = false);
     }
   }
 
-  // Al escanear el carnet, busca los pendientes del alumno y devuelve automáticamente 
-  // aquellos utensilios que coincidan con los modos seleccionados en pantalla.
+  // Escaneo y devolución automática restringida EXCLUSIVAMENTE a los préstamos de HOY
   Future<void> _procesarDevolucionMasivaPorEscaneo(String carnet) async {
     if (carnet.isEmpty) return;
     if (_modosSeleccionados.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Selecciona al menos un modo de utensilio a devolver'), backgroundColor: Colors.orange),
-      );
+      mostrarNotificacionApp('Aviso', 'Selecciona al menos un modo de utensilio a devolver', esError: true);
       return;
     }
 
@@ -1045,41 +1136,45 @@ class _PendientesPageState extends State<PendientesPage> {
       final response = await http.get(url);
       
       if (response.statusCode != 200) {
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Estudiante no encontrado o sin conexión'), backgroundColor: Colors.red),
-        );
+        mostrarNotificacionApp('Error', 'Estudiante no encontrado o sin conexión', esError: true);
         return;
       }
 
       final data = jsonDecode(response.body);
-      final List<dynamic> listaPendientes = data is List ? data : (data['pendientes'] ?? []);
+      final List<dynamic> listaCruda = data is List ? data : (data['pendientes'] ?? []);
 
-      if (listaPendientes.isEmpty) {
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('El estudiante no tiene utensilios pendientes'), backgroundColor: Colors.orange),
-        );
+      if (listaCruda.isEmpty) {
+        mostrarNotificacionApp('Aviso', 'El estudiante no tiene utensilios pendientes', esError: true);
         setState(() => pendientes = []);
         return;
       }
 
-      // Filtramos los pendientes que coincidan con los modos seleccionados (ej: Plato, Vaso, etc.)
-      final aDevolver = listaPendientes.where((item) {
+      // Filtrar únicamente los del día de HOY
+      final hoyStr = DateTime.now().toString().split(' ')[0];
+      final pendientesDeHoy = listaCruda.where((item) {
+        final fechaRetiro = (item['fecha_retiro'] ?? '').toString();
+        return fechaRetiro.startsWith(hoyStr);
+      }).toList();
+
+      if (pendientesDeHoy.isEmpty) {
+        mostrarNotificacionApp('Aviso', 'El alumno no tiene préstamos pendientes del día de hoy (los anteriores no aplican)', esError: true);
+        setState(() => pendientes = []);
+        return;
+      }
+
+      // Filtrar por los modos seleccionados en pantalla
+      final aDevolver = pendientesDeHoy.where((item) {
         final tipoItem = (item['tipo'] ?? '').toString().toLowerCase();
         return _modosSeleccionados.any((modo) => modo.toLowerCase() == tipoItem);
       }).toList();
 
       if (aDevolver.isEmpty) {
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('El alumno no tiene pendientes de los tipos seleccionados (${_modosSeleccionados.join(", ")})'), backgroundColor: Colors.orange),
-        );
-        setState(() => pendientes = listaPendientes);
+        mostrarNotificacionApp('Aviso', 'No hay pendientes de hoy para los modos seleccionados (${_modosSeleccionados.join(", ")})', esError: true);
+        setState(() => pendientes = pendientesDeHoy);
         return;
       }
 
-      // Procesamos la devolución de cada uno de los elementos encontrados para esos modos
+      // Procesar la devolución de cada uno de los elementos de hoy
       int devueltosExitosos = 0;
       for (var item in aDevolver) {
         final movimientoId = item['id'];
@@ -1092,24 +1187,18 @@ class _PendientesPageState extends State<PendientesPage> {
       }
 
       if (devueltosExitosos > 0) {
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('¡Devolución exitosa! Se devolvieron $devueltosExitosos utensilio(s).'), backgroundColor: Colors.green.shade800),
-        );
+        mostrarNotificacionApp('¡Devolución Exitosa!', 'Se devolvieron $devueltosExitosos utensilio(s) del día actual.');
         await mostrarNotificacionLocal(
           'Devolución Automática',
           'Se procesó la devolución de: ${_modosSeleccionados.join(", ")} para el carnet $carnet',
         );
       }
 
-      // Actualizamos la lista restante en pantalla
+      // Actualizar vista restante
       _consultarPendientesManual();
 
     } catch (_) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Error al procesar la devolución automática'), backgroundColor: Colors.red),
-      );
+      mostrarNotificacionApp('Error', 'Error al procesar la devolución automática', esError: true);
     } finally {
       if (mounted) setState(() => _cargando = false);
     }
@@ -1123,7 +1212,7 @@ class _PendientesPageState extends State<PendientesPage> {
       appBar: AppBar(
         backgroundColor: cs.primary,
         foregroundColor: Colors.white,
-        title: const Text('Devolución por Modo Activo', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+        title: const Text('Devolución por Modo Activo (Solo Hoy)', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
         centerTitle: true,
       ),
       body: Padding(
@@ -1135,7 +1224,6 @@ class _PendientesPageState extends State<PendientesPage> {
               child: Text('1. Selecciona el tipo(s) a devolver:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Color(0xFF1E293B))),
             ),
             const SizedBox(height: 10),
-            // Botones de selección múltiple/permanente para el modo de devolución
             Row(
               children: _tiposDisponibles.map((tipo) {
                 final seleccionado = _modosSeleccionados.contains(tipo);
@@ -1144,7 +1232,6 @@ class _PendientesPageState extends State<PendientesPage> {
                     onTap: () {
                       setState(() {
                         if (seleccionado) {
-                          // Evitamos deseleccionar todos si al menos debe quedar uno
                           if (_modosSeleccionados.length > 1) {
                             _modosSeleccionados.remove(tipo);
                           }
@@ -1213,7 +1300,7 @@ class _PendientesPageState extends State<PendientesPage> {
                     ),
                     onPressed: _consultarPendientesManual,
                     icon: const Icon(Icons.search_rounded),
-                    label: const Text('Consultar Pendientes'),
+                    label: const Text('Consultar Hoy'),
                   ),
                 ),
                 const SizedBox(width: 10),
@@ -1235,7 +1322,7 @@ class _PendientesPageState extends State<PendientesPage> {
             const SizedBox(height: 20),
             const Align(
               alignment: Alignment.centerLeft,
-              child: Text('Utensilios actuales del estudiante:', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Color(0xFF1E293B))),
+              child: Text('Utensilios pendientes del día de hoy:', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Color(0xFF0F172A))),
             ),
             const SizedBox(height: 10),
             Expanded(
@@ -1243,12 +1330,12 @@ class _PendientesPageState extends State<PendientesPage> {
                   ? const Center(child: CircularProgressIndicator())
                   : _carnetCtrl.text.trim().isEmpty
                       ? const Center(
-                          child: Text('Selecciona los utensilios arriba y escanea el carnet para procesar la devolución automáticamente',
+                          child: Text('Selecciona el tipo de utensilio arriba y escanea o consulta el carnet',
                               textAlign: TextAlign.center, style: TextStyle(color: Colors.grey)))
                       : pendientes.isEmpty
                           ? const Center(
-                              child: Text('Este estudiante no tiene utensilios pendientes registrados',
-                                  textAlign: TextAlign.center, style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold)))
+                              child: Text('No hay utensilios pendientes registrados para este alumno en el día de hoy',
+                                  textAlign: TextAlign.center, style: TextStyle(color: Color(0xFF16A34A), fontWeight: FontWeight.bold)))
                           : ListView.builder(
                               itemCount: pendientes.length,
                               itemBuilder: (context, index) {
@@ -1267,7 +1354,7 @@ class _PendientesPageState extends State<PendientesPage> {
                                       child: Icon(_iconoTipo[tipo] ?? Icons.restaurant, color: esModoActivo ? const Color(0xFFC62828) : Colors.grey),
                                     ),
                                     title: Text(tipo, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: esModoActivo ? Colors.black87 : Colors.grey)),
-                                    subtitle: Text('Retirado: $fechaRetiro', style: const TextStyle(fontSize: 12)),
+                                    subtitle: Text('Retirado hoy: $fechaRetiro', style: const TextStyle(fontSize: 12)),
                                     trailing: Container(
                                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                                       decoration: BoxDecoration(
@@ -1326,19 +1413,9 @@ class _RegistrarEstudiantePageState extends State<RegistrarEstudiantePage> {
     super.dispose();
   }
 
-  void _msg(String texto, {bool error = false}) {
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(texto),
-        backgroundColor: error ? const Color(0xFFC62828) : const Color(0xFF2E7D32),
-      ),
-    );
-  }
-
   Future<void> _guardarEstudiante() async {
     if (_nombreCtrl.text.trim().isEmpty || _carnetCtrl.text.trim().isEmpty || _codigoCtrl.text.trim().isEmpty) {
-      _msg('Por favor completa todos los campos obligatorios', error: true);
+      mostrarNotificacionApp('Aviso', 'Por favor completa todos los campos obligatorios', esError: true);
       return;
     }
 
@@ -1356,13 +1433,13 @@ class _RegistrarEstudiantePageState extends State<RegistrarEstudiantePage> {
       );
 
       if (resp.statusCode == 200 || resp.statusCode == 201) {
-        _msg('Estudiante registrado exitosamente');
+        mostrarNotificacionApp('Éxito', 'Estudiante registrado exitosamente');
         if (mounted) Navigator.pop(context);
       } else {
-        _msg('Error al registrar estudiante en el servidor', error: true);
+        mostrarNotificacionApp('Error', 'Error al registrar estudiante en el servidor', esError: true);
       }
     } catch (_) {
-      _msg('No se pudo conectar con el servidor backend', error: true);
+      mostrarNotificacionApp('Error de Red', 'No se pudo conectar con el servidor backend', esError: true);
     } finally {
       if (mounted) setState(() => _guardando = false);
     }
@@ -1567,23 +1644,12 @@ class _InformesPageState extends State<InformesPage> {
         await file.writeAsBytes(fileBytes, flush: true);
 
         if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Guardado en teléfono: informe_cocina_${_fechaController.text}.xlsx'),
-            backgroundColor: const Color(0xFF2E7D32),
-            action: SnackBarAction(
-              label: 'ABRIR',
-              textColor: Colors.white,
-              onPressed: () => OpenFile.open(path),
-            ),
-          ),
-        );
+        mostrarNotificacionApp('Archivo Guardado', 'Excel almacenado en: informe_cocina_${_fechaController.text}.xlsx');
+        OpenFile.open(path);
       }
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error al guardar archivo Excel: $e'), backgroundColor: Colors.red),
-      );
+      mostrarNotificacionApp('Error', 'Error al guardar archivo Excel: $e', esError: true);
     }
   }
 
@@ -1739,7 +1805,7 @@ class ConfiguracionPage extends StatelessWidget {
                 ListTile(
                   leading: Icon(Icons.info_outline, color: Color(0xFFB71C1C)),
                   title: Text('Versión de la App'),
-                  subtitle: Text('1.0.0+2 (Devolución por Modo Activo)'),
+                  subtitle: Text('1.1.0 (Notificaciones Top y Devolución del Día)'),
                 ),
               ],
             ),
@@ -1770,7 +1836,7 @@ class _EscaneoPageState extends State<EscaneoPage> {
         _scanned = true;
         setState(() {});
 
-        Future.delayed(const Duration(milliseconds: 500), () {
+        Future.delayed(const Duration(milliseconds: 400), () {
           if (mounted) {
             widget.onCodigoEscaneado(code);
             Navigator.pop(context);
@@ -1817,11 +1883,11 @@ class _EscaneoPageState extends State<EscaneoPage> {
                 child: Container(
                   padding: const EdgeInsets.all(24),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFC62828),
+                    color: const Color(0xFF16A34A),
                     shape: BoxShape.circle,
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.redAccent.withOpacity(0.6),
+                        color: Colors.greenAccent.withOpacity(0.6),
                         blurRadius: 20,
                         spreadRadius: 5,
                       )
