@@ -9,33 +9,15 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  
-  # Estilos y Tipografía
   google_fonts: ^6.1.0
-
-  # Conexión HTTP con el Backend
   http: ^1.2.0
-
-  # Escáner de códigos de barras / QR por cámara
   mobile_scanner: ^5.1.1
-
-  # Gráficos estadísticos (para la pantalla de estadísticas)
   fl_chart: ^0.68.0
-
-  # Notificaciones Locales (para avisos en tiempo real)
   flutter_local_notifications: ^17.2.2
-
-  # Exportación de reportes en PDF y visualización/impresión
   pdf: ^3.10.7
   printing: ^5.13.1
-
-  # Exportación de reportes en Excel
   excel: ^4.0.0
-
-  # Gestión de rutas y almacenamiento local para archivos
   path_provider: ^2.1.2
-
-  # Apertura de archivos generados (PDF/Excel) directamente en el dispositivo
   open_file_plus: ^3.4.0
 
 dev_dependencies:
@@ -45,7 +27,5 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
-
-  # Asegúrate de colocar tu logo en esta ruta si deseas que aparezca en la pantalla de inicio
   assets:
     - assets/icon/Logo_IN.PNG
