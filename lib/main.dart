@@ -1,11 +1,17 @@
 import 'dart:convert';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
 import 'package:mobile_scanner/mobile_scanner.dart';
-import 'package:fl_chart/fl_chart.dart'; // <--- Paquete para gráficas
+import 'package:fl_chart/fl_chart.dart';
+import 'package:pdf/widgets.dart' as pw;
+import 'package:printing/printing.dart';
+import 'package:excel/excel.dart' as excel_pkg;
+import 'package:path_provider/path_provider.dart';
+import 'package:open_file_plus/open_file_plus.dart';
 
-// ⚠️ IP actualizada correctamente según tu red
+// ⚠️ IP configurada hacia el Backend Node.js
 const String kBaseUrl = 'http://10.198.197.181:3000';
 
 void main() => runApp(const CocinaEscolarApp());
@@ -21,19 +27,34 @@ class CocinaEscolarApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         useMaterial3: true,
-        colorScheme: ColorScheme.fromSeed(seedColor: seed),
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: seed,
+          primary: const Color(0xFFB71C1C),
+          secondary: const Color(0xFFD32F2F),
+          surface: Colors.white,
+        ),
         textTheme: GoogleFonts.poppinsTextTheme(),
-        scaffoldBackgroundColor: const Color(0xFFF5F5F5),
+        scaffoldBackgroundColor: const Color(0xFFF4F6F9),
+        cardTheme: CardTheme(
+          elevation: 2,
+          shadowColor: Colors.black.withOpacity(0.08),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        ),
         inputDecorationTheme: const InputDecorationTheme(
           filled: true,
           fillColor: Colors.white,
+          contentPadding: EdgeInsets.symmetric(horizontal: 18, vertical: 16),
           border: OutlineInputBorder(
-            borderRadius: BorderRadius.all(Radius.circular(14)),
+            borderRadius: BorderRadius.all(Radius.circular(16)),
             borderSide: BorderSide.none,
           ),
           enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.all(Radius.circular(14)),
-            borderSide: BorderSide(color: Color(0xFFE0E0E0)),
+            borderRadius: BorderRadius.all(Radius.circular(16)),
+            borderSide: BorderSide(color: Color(0xFFE2E8F0)),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.all(Radius.circular(16)),
+            borderSide: BorderSide(color: Color(0xFFB71C1C), width: 1.5),
           ),
         ),
       ),
@@ -43,7 +64,7 @@ class CocinaEscolarApp extends StatelessWidget {
 }
 
 // ==========================================
-// NAVEGACIÓN PRINCIPAL (5 PESTAÑAS)
+// NAVEGACIÓN PRINCIPAL DE LA APLICACIÓN
 // ==========================================
 class MainNavigatorPage extends StatefulWidget {
   const MainNavigatorPage({super.key});
@@ -66,31 +87,58 @@ class _MainNavigatorPageState extends State<MainNavigatorPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: _pages[_currentIndex],
+      body: AnimatedSwitcher(
+        duration: const Duration(milliseconds: 250),
+        child: _pages[_currentIndex],
+      ),
       bottomNavigationBar: Container(
-        decoration: const BoxDecoration(
-          color: Color(0xFF212121),
+        decoration: BoxDecoration(
+          color: const Color(0xFF1E293B),
           boxShadow: [
-            BoxShadow(color: Colors.black26, blurRadius: 10, offset: Offset(0, -3))
+            BoxShadow(
+              color: Colors.black.withOpacity(0.15),
+              blurRadius: 12,
+              offset: const Offset(0, -4),
+            )
           ],
         ),
-        child: BottomNavigationBar(
-          currentIndex: _currentIndex,
-          onTap: (index) => setState(() => _currentIndex = index),
-          backgroundColor: Colors.transparent,
-          elevation: 0,
-          type: BottomNavigationBarType.fixed,
-          selectedItemColor: const Color(0xFFEF5350),
-          unselectedItemColor: Colors.grey,
-          selectedLabelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 10),
-          unselectedLabelStyle: const TextStyle(fontSize: 10),
-          items: const [
-            BottomNavigationBarItem(icon: Icon(Icons.home_rounded), label: 'Inicio'),
-            BottomNavigationBarItem(icon: Icon(Icons.qr_code_scanner_rounded), label: 'Registrar'),
-            BottomNavigationBarItem(icon: Icon(Icons.pie_chart_rounded), label: 'Gráficas'),
-            BottomNavigationBarItem(icon: Icon(Icons.bar_chart_rounded), label: 'Informes'),
-            BottomNavigationBarItem(icon: Icon(Icons.settings_rounded), label: 'Ajustes'),
-          ],
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 6),
+            child: BottomNavigationBar(
+              currentIndex: _currentIndex,
+              onTap: (index) => setState(() => _currentIndex = index),
+              backgroundColor: Colors.transparent,
+              elevation: 0,
+              type: BottomNavigationBarType.fixed,
+              selectedItemColor: const Color(0xFFEF5350),
+              unselectedItemColor: const Color(0xFF94A3B8),
+              selectedLabelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 11),
+              unselectedLabelStyle: const TextStyle(fontSize: 11),
+              items: const [
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.home_rounded),
+                  label: 'Inicio',
+                ),
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.qr_code_scanner_rounded),
+                  label: 'Registrar',
+                ),
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.pie_chart_rounded),
+                  label: 'Gráficas',
+                ),
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.picture_as_pdf_rounded),
+                  label: 'Informes',
+                ),
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.settings_rounded),
+                  label: 'Ajustes',
+                ),
+              ],
+            ),
+          ),
         ),
       ),
     );
@@ -98,10 +146,28 @@ class _MainNavigatorPageState extends State<MainNavigatorPage> {
 }
 
 // ==========================================
-// 1. PÁGINA DE INICIO
+// 1. PÁGINA DE INICIO (Con Logo Institucional)
 // ==========================================
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
+
+  Widget _buildAppLogo({double size = 45}) {
+    return Image.asset(
+      'assets/icon/Logo_IN.PNG', // Carga del logo de app[cite: 3]
+      width: size,
+      height: size,
+      fit: BoxFit.contain,
+      errorBuilder: (context, error, stackTrace) {
+        return Image.asset(
+          'assets/icon/logo.png', // Fallback si existe
+          width: size,
+          height: size,
+          fit: BoxFit.contain,
+          errorBuilder: (_, __, ___) => Icon(Icons.restaurant_menu, size: size, color: Colors.white),
+        );
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -110,8 +176,16 @@ class HomePage extends StatelessWidget {
       appBar: AppBar(
         backgroundColor: cs.primary,
         foregroundColor: Colors.white,
-        title: const Text('Cocina Escolar', style: TextStyle(fontWeight: FontWeight.bold)),
+        title: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _buildAppLogo(size: 32),
+            const SizedBox(width: 10),
+            const Text('Cocina Escolar', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 19)),
+          ],
+        ),
         centerTitle: true,
+        elevation: 0,
         leading: Builder(
           builder: (context) => IconButton(
             icon: const Icon(Icons.menu_rounded),
@@ -126,19 +200,28 @@ class HomePage extends StatelessWidget {
             DrawerHeader(
               decoration: BoxDecoration(
                 gradient: LinearGradient(
-                  colors: [cs.primary, const Color(0xFFD32F2F)],
+                  colors: [cs.primary, const Color(0xFF8C0000)],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
               ),
-              child: const Column(
+              child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
-                  Icon(Icons.restaurant_menu, size: 40, color: Colors.white),
-                  SizedBox(height: 10),
-                  Text('Menú de Gestión', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
-                  Text('INFRAMEN · Control de Vajilla', style: TextStyle(color: Colors.white70, fontSize: 12)),
+                  Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.15),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: _buildAppLogo(size: 48),
+                  ),
+                  const SizedBox(height: 10),
+                  const Text('Menú de Gestión',
+                      style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+                  const Text('INFRAMEN · Control de Vajilla',
+                      style: TextStyle(color: Colors.white70, fontSize: 12)),
                 ],
               ),
             ),
@@ -148,7 +231,10 @@ class HomePage extends StatelessWidget {
               subtitle: const Text('Escanear carnet y devolver'),
               onTap: () {
                 Navigator.pop(context);
-                Navigator.push(context, MaterialPageRoute(builder: (_) => const PendientesPage()));
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const PendientesPage()),
+                );
               },
             ),
             const Divider(),
@@ -170,23 +256,30 @@ class HomePage extends StatelessWidget {
                   end: Alignment.bottomRight,
                 ),
                 borderRadius: BorderRadius.circular(22),
-                boxShadow: [BoxShadow(color: cs.primary.withOpacity(0.3), blurRadius: 10, offset: const Offset(0, 5))],
+                boxShadow: [
+                  BoxShadow(color: cs.primary.withOpacity(0.35), blurRadius: 12, offset: const Offset(0, 6))
+                ],
               ),
               child: Row(
                 children: [
                   Container(
-                    padding: const EdgeInsets.all(14),
-                    decoration: BoxDecoration(color: Colors.white.withOpacity(0.2), shape: BoxShape.circle),
-                    child: const Icon(Icons.restaurant_menu, size: 36, color: Colors.white),
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.2),
+                      shape: BoxShape.circle,
+                    ),
+                    child: _buildAppLogo(size: 42),
                   ),
                   const SizedBox(width: 16),
-                  const Expanded(
+                  Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('¡Bienvenido al Sistema!', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
-                        SizedBox(height: 4),
-                        Text('INFRAMEN · Control Inteligente', style: TextStyle(color: Colors.white70, fontSize: 13)),
+                        const Text('¡Bienvenido al Sistema!',
+                            style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+                        const SizedBox(height: 4),
+                        Text('INFRAMEN · Control de Vajilla',
+                            style: TextStyle(color: Colors.white.withOpacity(0.9), fontSize: 13)),
                       ],
                     ),
                   ),
@@ -194,7 +287,8 @@ class HomePage extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 25),
-            const Text('Panel de Acceso Rápido', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.black87)),
+            const Text('Panel de Acceso Rápido',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF1E293B))),
             const SizedBox(height: 15),
             Row(
               children: [
@@ -203,16 +297,20 @@ class HomePage extends StatelessWidget {
                     icon: Icons.qr_code_scanner,
                     titulo: 'Escanear Retiro',
                     color: const Color(0xFFC62828),
-                    onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const RegistrarPage())),
+                    onTap: () {
+                      Navigator.push(context, MaterialPageRoute(builder: (_) => const RegistrarPage()));
+                    },
                   ),
                 ),
                 const SizedBox(width: 15),
                 Expanded(
                   child: _AccesoCard(
-                    icon: Icons.warning_amber_rounded,
+                    icon: Icons.assignment_return_rounded,
                     titulo: 'Ver Pendientes',
-                    color: Colors.grey.shade800,
-                    onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const PendientesPage())),
+                    color: const Color(0xFF1E293B),
+                    onTap: () {
+                      Navigator.push(context, MaterialPageRoute(builder: (_) => const PendientesPage()));
+                    },
                   ),
                 ),
               ],
@@ -234,23 +332,35 @@ class _AccesoCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
+    return Material(
+      color: Colors.white,
       borderRadius: BorderRadius.circular(18),
-      child: Container(
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(18),
-          boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 5, offset: Offset(0, 2))],
-          border: Border.all(color: Colors.grey.shade300),
-        ),
-        child: Column(
-          children: [
-            CircleAvatar(radius: 26, backgroundColor: color.withOpacity(0.1), child: Icon(icon, color: color, size: 28)),
-            const SizedBox(height: 12),
-            Text(titulo, textAlign: TextAlign.center, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
-          ],
+      elevation: 2,
+      shadowColor: Colors.black.withOpacity(0.06),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(18),
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 22, horizontal: 16),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: const Color(0xFFE2E8F0)),
+          ),
+          child: Column(
+            children: [
+              CircleAvatar(
+                radius: 26,
+                backgroundColor: color.withOpacity(0.12),
+                child: Icon(icon, color: color, size: 28),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                titulo,
+                textAlign: TextAlign.center,
+                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xFF334155)),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -258,7 +368,7 @@ class _AccesoCard extends StatelessWidget {
 }
 
 // ==========================================
-// 2. REGISTRO DE RETIRO
+// 2. PÁGINA DE REGISTRO DE RETIRO Y ESCANEO
 // ==========================================
 class RegistrarPage extends StatefulWidget {
   const RegistrarPage({super.key});
@@ -281,7 +391,11 @@ class _RegistrarPageState extends State<RegistrarPage> {
 
   void _msg(String texto, {bool error = false}) {
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(texto), backgroundColor: error ? Colors.red.shade800 : Colors.grey.shade800, behavior: SnackBarBehavior.floating),
+      SnackBar(
+        content: Text(texto),
+        backgroundColor: error ? const Color(0xFFC62828) : const Color(0xFF2E7D32),
+        behavior: SnackBarBehavior.floating,
+      ),
     );
   }
 
@@ -304,24 +418,27 @@ class _RegistrarPageState extends State<RegistrarPage> {
     setState(() => _cargando = true);
     try {
       final estResp = await http.get(Uri.parse('$kBaseUrl/estudiante/$codigo'));
+      
       if (estResp.statusCode == 404) {
         if (!mounted) return;
         _mostrarDialogoEstudianteNoEncontrado(codigo);
         return;
       }
+
       if (estResp.statusCode != 200) {
         _msg('Error al conectar con el servidor', error: true);
         return;
       }
 
       final estudianteId = jsonDecode(estResp.body)['estudiante']['id'];
+
       final retResp = await http.post(
         Uri.parse('$kBaseUrl/retiro'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({'estudiante_id': estudianteId, 'tipo': _tipo}),
       );
 
-      if (retResp.statusCode == 200) {
+      if (retResp.statusCode == 200 || retResp.statusCode == 201) {
         _msg('¡Retiro de $_tipo registrado con éxito!');
         _carnetCtrl.clear();
       } else {
@@ -338,15 +455,26 @@ class _RegistrarPageState extends State<RegistrarPage> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: const Text('Estudiante no registrado'),
-        content: Text('El código "$codigo" no se encuentra en la base de datos. ¿Deseas registrar al alumno ahora?'),
+        content: Text('El código "$codigo" no se encuentra en la base de datos. ¿Deseas registrar a este estudiante ahora?'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancelar', style: TextStyle(color: Colors.grey))),
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancelar', style: TextStyle(color: Colors.grey)),
+          ),
           ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFB71C1C), foregroundColor: Colors.white),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFB71C1C),
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
             onPressed: () {
               Navigator.pop(context);
-              Navigator.push(context, MaterialPageRoute(builder: (_) => RegistrarEstudiantePage(codigoInicial: codigo)));
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => RegistrarEstudiantePage(codigoInicial: codigo)),
+              );
             },
             child: const Text('Registrar Alumno'),
           ),
@@ -368,15 +496,12 @@ class _RegistrarPageState extends State<RegistrarPage> {
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
         child: Card(
-          elevation: 2,
-          color: Colors.white,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
           child: Padding(
-            padding: const EdgeInsets.all(20),
+            padding: const EdgeInsets.all(22),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('Control de Préstamo', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                const Text('Control de Préstamo', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF1E293B))),
                 const SizedBox(height: 6),
                 const Text('Escanea el carnet o ingresa el código del alumno.', style: TextStyle(color: Colors.grey, fontSize: 13)),
                 const SizedBox(height: 20),
@@ -395,10 +520,17 @@ class _RegistrarPageState extends State<RegistrarPage> {
                 const SizedBox(height: 18),
                 DropdownButtonFormField<String>(
                   value: _tipo,
-                  decoration: const InputDecoration(labelText: 'Tipo de Utensilio', prefixIcon: Icon(Icons.category_outlined)),
+                  decoration: const InputDecoration(
+                    labelText: 'Tipo de Utensilio',
+                    prefixIcon: Icon(Icons.category_outlined),
+                  ),
                   items: _tipos.map((t) => DropdownMenuItem(
                     value: t,
-                    child: Row(children: [Icon(_iconoTipo[t], size: 20, color: cs.primary), const SizedBox(width: 8), Text(t)]),
+                    child: Row(children: [
+                      Icon(_iconoTipo[t], size: 20, color: cs.primary),
+                      const SizedBox(width: 8),
+                      Text(t),
+                    ]),
                   )).toList(),
                   onChanged: (v) => setState(() => _tipo = v!),
                 ),
@@ -411,6 +543,7 @@ class _RegistrarPageState extends State<RegistrarPage> {
                       backgroundColor: cs.primary,
                       foregroundColor: Colors.white,
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                      elevation: 2,
                     ),
                     onPressed: _cargando ? null : () => _procesarRetiro(_carnetCtrl.text.trim()),
                     icon: _cargando 
@@ -429,7 +562,7 @@ class _RegistrarPageState extends State<RegistrarPage> {
 }
 
 // ==========================================
-// 3. PÁGINA DE ESTADÍSTICAS (Con Selector de Gráfica: Pastel o Barras)
+// 3. PÁGINA DE ESTADÍSTICAS (Gráficas de Pastel Mejoradas)
 // ==========================================
 class EstadisticasPage extends StatefulWidget {
   const EstadisticasPage({super.key});
@@ -442,7 +575,7 @@ class _EstadisticasPageState extends State<EstadisticasPage> {
   bool _cargando = false;
   List<dynamic> _informe = [];
   String _fechaHoy = '';
-  bool _mostrarBarras = false; // Alternar entre estilo pastel y barras
+  int _touchedIndex = -1;
 
   final _iconoTipo = const {
     'Plato': Icons.dinner_dining,
@@ -461,11 +594,12 @@ class _EstadisticasPageState extends State<EstadisticasPage> {
     try {
       final url = Uri.parse('$kBaseUrl/informe');
       final response = await http.get(url);
+      
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         setState(() {
           _informe = data is List ? data : (data['informe'] ?? []);
-          _fechaHoy = data['fecha'] ?? '';
+          _fechaHoy = data['fecha'] ?? DateTime.now().toString().split(' ')[0];
         });
       } else {
         setState(() => _informe = []);
@@ -477,77 +611,64 @@ class _EstadisticasPageState extends State<EstadisticasPage> {
     }
   }
 
-  // Estilo Gráfica Pastel Mejorado
   List<PieChartSectionData> _generarDatosPastel() {
-    return _informe.map((item) {
+    double total = 0;
+    for (var item in _informe) {
+      total += double.tryParse(item['entregados'].toString()) ?? 0.0;
+    }
+
+    return List.generate(_informe.length, (i) {
+      final isTouched = i == _touchedIndex;
+      final fontSize = isTouched ? 16.0 : 12.0;
+      final radius = isTouched ? 75.0 : 65.0;
+      final item = _informe[i];
       final tipo = item['tipo'] ?? 'Utensilio';
       final entregados = double.tryParse(item['entregados'].toString()) ?? 0.0;
-      
-      Color colorUtensilio = Colors.blue;
-      if (tipo == 'Plato') colorUtensilio = const Color(0xFF1976D2);
-      if (tipo == 'Vaso') colorUtensilio = const Color(0xFF00897B);
-      if (tipo == 'Taza') colorUtensilio = const Color(0xFF8E24AA);
+      final porcentaje = total > 0 ? ((entregados / total) * 100).toStringAsFixed(1) : '0';
+
+      Color colorUtensilio;
+      switch (tipo) {
+        case 'Plato':
+          colorUtensilio = const Color(0xFF1E88E5);
+          break;
+        case 'Vaso':
+          colorUtensilio = const Color(0xFFFB8C00);
+          break;
+        case 'Taza':
+          colorUtensilio = const Color(0xFFE53935);
+          break;
+        default:
+          colorUtensilio = const Color(0xFF43A047);
+      }
 
       return PieChartSectionData(
-        value: entregados,
-        title: "$tipo\n($entregados)",
         color: colorUtensilio,
-        radius: 70,
-        badgeWidget: Icon(_iconoTipo[tipo], color: Colors.white, size: 16),
-        badgePositionPercentageOffset: .75,
-        titleStyle: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.white),
+        value: entregados,
+        title: '$porcentaje%',
+        radius: radius,
+        titleStyle: TextStyle(fontSize: fontSize, fontWeight: FontWeight.bold, color: Colors.white),
+        badgeWidget: isTouched
+            ? Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(color: Colors.black87, borderRadius: BorderRadius.circular(8)),
+                child: Text('$tipo: ${entregados.toInt()}', style: const TextStyle(color: Colors.white, fontSize: 11)),
+              )
+            : null,
+        badgePositionPercentageOffset: 1.2,
       );
-    }).toList();
+    });
   }
 
-  // Estilo Gráfica de Barras Modernas
-  BarChartData _generarDatosBarras() {
-    int index = 0;
-    List<Color> colores = [const Color(0xFF2E7D32), const Color(0xFF00897B), const Color(0xFF8E24AA), const Color(0xFFD32F2F)];
-
-    return BarChartData(
-      alignment: BarChartAlignment.spaceAround,
-      maxY: _informe.fold(5.0, (max, item) {
-        double val = double.tryParse(item['entregados'].toString()) ?? 0.0;
-        return (val ?? 0) > max ? (val ?? 0) + 2 : max;
-      }),
-      barTouchData: BarTouchData(enabled: true),
-      titlesData: FlTitlesData(
-        show: true,
-        bottomTitles: AxisTitles(
-          sideTitles: SideTitles(
-            showTitles: true,
-            getTitlesWidget: (double value, TitleMeta meta) {
-              int idx = value.toInt();
-              if (idx >= 0 && idx < _informe.length) {
-                return Padding(
-                  padding: const EdgeInsets.only(top: 8.0),
-                  child: Text(_informe[idx]['tipo'] ?? '', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
-                );
-              }
-              return const Text('');
-            },
-          ),
-        ),
-        leftTitles: const AxisTitles(sideTitles: SideTitles(showTitles: true, reservedSize: 28)),
-        topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-        rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-      ),
-      gridData: const FlGridData(show: true, drawVerticalLine: false),
-      borderData: FlBorderData(show: false),
-      barGroups: _informe.map((item) {
-        final val = double.tryParse(item['entregados'].toString()) ?? 0.0;
-        final color = colores[index % colores.length];
-        final rod = BarChartRodData(
-          toY: val,
-          color: color,
-          width: 22,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(8)),
-          backDrawRodData: BackgroundBarChartRodData(show: true, toY: 10, color: Colors.grey.shade200),
-        );
-        index++;
-        return BarChartGroupData(x: index - 1, barRods: [rod]);
-      }).toList(),
+  Widget _buildLeyenda() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        _ItemLeyenda(color: const Color(0xFF1E88E5), texto: 'Platos'),
+        const SizedBox(width: 15),
+        _ItemLeyenda(color: const Color(0xFFFB8C00), texto: 'Vasos'),
+        const SizedBox(width: 15),
+        _ItemLeyenda(color: const Color(0xFFE53935), texto: 'Tazas'),
+      ],
     );
   }
 
@@ -562,54 +683,78 @@ class _EstadisticasPageState extends State<EstadisticasPage> {
         centerTitle: true,
         actions: [
           IconButton(
-            icon: Icon(_mostrarBarras ? Icons.pie_chart : Icons.bar_chart),
-            onPressed: () => setState(() => _mostrarBarras = !_mostrarBarras),
-            tooltip: 'Cambiar estilo de gráfica',
+            icon: const Icon(Icons.refresh_rounded),
+            onPressed: _obtenerEstadisticasHoy,
+            tooltip: 'Actualizar',
           ),
-          IconButton(icon: const Icon(Icons.refresh_rounded), onPressed: _obtenerEstadisticasHoy, tooltip: 'Actualizar'),
         ],
       ),
       body: Padding(
         padding: const EdgeInsets.all(20),
         child: Column(
           children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                if (_fechaHoy.isNotEmpty)
-                  Text('Fecha: $_fechaHoy', style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.grey, fontSize: 13)),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(color: cs.primary.withOpacity(0.1), borderRadius: BorderRadius.circular(10)),
-                  child: Text(_mostrarBarras ? 'Estilo: Barras' : 'Estilo: Pastel', style: TextStyle(color: cs.primary, fontWeight: FontWeight.bold, fontSize: 12)),
+            if (_fechaHoy.isNotEmpty)
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                decoration: BoxDecoration(
+                  color: cs.primary.withOpacity(0.08),
+                  borderRadius: BorderRadius.circular(20),
                 ),
-              ],
+                child: Text('Fecha de hoy: $_fechaHoy',
+                    style: TextStyle(fontWeight: FontWeight.bold, color: cs.primary, fontSize: 13)),
+              ),
+            const SizedBox(height: 15),
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  children: [
+                    const Text('Proporción de Vajilla Entregada', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                    const SizedBox(height: 15),
+                    SizedBox(
+                      height: 200,
+                      child: _cargando
+                          ? const Center(child: CircularProgressIndicator())
+                          : _informe.isEmpty
+                              ? const Center(
+                                  child: Text('No hay registros para hoy',
+                                      textAlign: TextAlign.center, style: TextStyle(color: Colors.grey)))
+                              : PieChart(
+                                  PieChartData(
+                                    pieTouchData: PieTouchData(
+                                      touchCallback: (FlTouchEvent event, pieTouchResponse) {
+                                        setState(() {
+                                          if (!event.isInterestedForInteractions ||
+                                              pieTouchResponse == null ||
+                                              pieTouchResponse.touchedSection == null) {
+                                            _touchedIndex = -1;
+                                            return;
+                                          }
+                                          _touchedIndex = pieTouchResponse.touchedSection!.touchedSectionIndex;
+                                        });
+                                      },
+                                    ),
+                                    borderData: FlBorderData(show: false),
+                                    sectionsSpace: 3,
+                                    centerSpaceRadius: 40,
+                                    sections: _generarDatosPastel(),
+                                  ),
+                                ),
+                    ),
+                    const SizedBox(height: 15),
+                    _buildLeyenda(),
+                  ],
+                ),
+              ),
             ),
             const SizedBox(height: 15),
-            SizedBox(
-              height: 220,
-              child: _cargando
-                  ? const Center(child: CircularProgressIndicator())
-                  : _informe.isEmpty
-                      ? const Center(child: Text('No hay registros estadísticos para hoy', style: TextStyle(color: Colors.grey)))
-                      : _mostrarBarras
-                          ? BarChart(_generarDatosBarras())
-                          : PieChart(
-                              PieChartData(
-                                sections: _generarDatosPastel(),
-                                centerSpaceRadius: 40,
-                                sectionsSpace: 3,
-                              ),
-                            ),
-            ),
-            const SizedBox(height: 15),
-            const Divider(),
-            const SizedBox(height: 5),
             Expanded(
               child: _cargando
                   ? const Center(child: CircularProgressIndicator())
                   : _informe.isEmpty
-                      ? const Center(child: Text('Sin detalles de movimientos para hoy', style: TextStyle(color: Colors.grey)))
+                      ? const Center(
+                          child: Text('Sin detalles de movimientos para hoy',
+                              textAlign: TextAlign.center, style: TextStyle(color: Colors.grey)))
                       : ListView.builder(
                           itemCount: _informe.length,
                           itemBuilder: (context, index) {
@@ -620,17 +765,16 @@ class _EstadisticasPageState extends State<EstadisticasPage> {
                             final pendientes = item['pendientes'] ?? 0;
 
                             return Card(
-                              color: Colors.white,
                               margin: const EdgeInsets.only(bottom: 12),
-                              elevation: 1,
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                               child: ListTile(
+                                contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
                                 leading: CircleAvatar(
                                   backgroundColor: cs.primary.withOpacity(0.1),
                                   child: Icon(_iconoTipo[tipo] ?? Icons.analytics, color: cs.primary),
                                 ),
                                 title: Text("Utensilio: $tipo", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
-                                subtitle: Text("Entregados: $entregados | Devueltos: $devueltos | Pendientes: $pendientes", style: const TextStyle(fontSize: 12)),
+                                subtitle: Text("Entregados: $entregados | Devueltos: $devueltos | Pendientes: $pendientes",
+                                    style: const TextStyle(fontSize: 12)),
                               ),
                             );
                           },
@@ -643,8 +787,26 @@ class _EstadisticasPageState extends State<EstadisticasPage> {
   }
 }
 
+class _ItemLeyenda extends StatelessWidget {
+  final Color color;
+  final String texto;
+  const _ItemLeyenda({required this.color, required this.texto});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(width: 12, height: 12, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
+        const SizedBox(width: 6),
+        Text(texto, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+      ],
+    );
+  }
+}
+
 // ==========================================
-// 4. UTENSILIOS PENDIENTES Y DEVOLUCIÓN
+// 4. PÁGINA DE UTENSILIOS PENDIENTES Y DEVOLUCIÓN
 // ==========================================
 class PendientesPage extends StatefulWidget {
   const PendientesPage({super.key});
@@ -672,7 +834,9 @@ class _PendientesPageState extends State<PendientesPage> {
       MaterialPageRoute(
         builder: (context) => EscaneoPage(
           onCodigoEscaneado: (codigo) {
-            setState(() => _carnetCtrl.text = codigo);
+            setState(() {
+              _carnetCtrl.text = codigo; 
+            });
             obtenerPendientes();
           },
         ),
@@ -688,6 +852,7 @@ class _PendientesPageState extends State<PendientesPage> {
     try {
       final url = Uri.parse('$kBaseUrl/pendientes/$carnet');
       final response = await http.get(url);
+      
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         setState(() {
@@ -696,12 +861,16 @@ class _PendientesPageState extends State<PendientesPage> {
       } else {
         setState(() => pendientes = []);
         if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('No se encontraron pendientes para este carnet'), backgroundColor: Colors.red));
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('No se encontraron pendientes para este carnet'), backgroundColor: Colors.red),
+        );
       }
     } catch (_) {
       setState(() => pendientes = []);
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Error de conexión con el servidor'), backgroundColor: Colors.red));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Error de conexión con el servidor'), backgroundColor: Colors.red),
+      );
     } finally {
       if (mounted) setState(() => _cargando = false);
     }
@@ -709,26 +878,35 @@ class _PendientesPageState extends State<PendientesPage> {
 
   Future<void> _registrarDevolucion(dynamic movimientoId, String tipo) async {
     if (movimientoId == null) return;
+
     try {
       final url = Uri.parse('$kBaseUrl/devolucion/$movimientoId');
       final response = await http.put(url);
+
       if (response.statusCode == 200) {
         if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('¡Devolución de $tipo registrada con éxito!'), backgroundColor: Colors.green.shade800));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('¡Devolución de $tipo registrada con éxito!'), backgroundColor: Colors.green.shade800),
+        );
         obtenerPendientes();
       } else {
         if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('No se pudo registrar la devolución'), backgroundColor: Colors.red));
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('No se pudo registrar la devolución'), backgroundColor: Colors.red),
+        );
       }
     } catch (_) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Error de conexión al intentar devolver'), backgroundColor: Colors.red));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Error de conexión al intentar devolver'), backgroundColor: Colors.red),
+      );
     }
   }
 
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+
     final pendientesFiltrados = pendientes.where((item) {
       final tipo = item['tipo'] ?? '';
       return tipo.toLowerCase() == _categoriaSeleccionada.toLowerCase();
@@ -769,7 +947,11 @@ class _PendientesPageState extends State<PendientesPage> {
               width: double.infinity,
               height: 48,
               child: ElevatedButton.icon(
-                style: ElevatedButton.styleFrom(backgroundColor: cs.primary, foregroundColor: Colors.white, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14))),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: cs.primary,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                ),
                 onPressed: obtenerPendientes,
                 icon: const Icon(Icons.search_rounded),
                 label: const Text('Buscar Pendientes del Alumno', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
@@ -795,7 +977,7 @@ class _PendientesPageState extends State<PendientesPage> {
                         decoration: BoxDecoration(
                           color: seleccionado ? cs.primary : Colors.white,
                           borderRadius: BorderRadius.circular(14),
-                          border: Border.all(color: seleccionado ? cs.primary : Colors.grey.shade300),
+                          border: Border.all(color: seleccionado ? cs.primary : const Color(0xFFE2E8F0)),
                         ),
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
@@ -806,7 +988,10 @@ class _PendientesPageState extends State<PendientesPage> {
                             const SizedBox(height: 2),
                             Container(
                               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                              decoration: BoxDecoration(color: seleccionado ? Colors.white.withOpacity(0.2) : Colors.grey.shade100, borderRadius: BorderRadius.circular(10)),
+                              decoration: BoxDecoration(
+                                color: seleccionado ? Colors.white.withOpacity(0.2) : Colors.grey.shade100,
+                                borderRadius: BorderRadius.circular(10),
+                              ),
                               child: Text('$cantidad', style: TextStyle(color: seleccionado ? Colors.white : Colors.grey.shade700, fontSize: 10, fontWeight: FontWeight.bold)),
                             ),
                           ],
@@ -820,16 +1005,20 @@ class _PendientesPageState extends State<PendientesPage> {
             ],
             const Align(
               alignment: Alignment.centerLeft,
-              child: Text('Utensilios pendientes:', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Colors.black87)),
+              child: Text('Utensilios pendientes:', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Color(0xFF1E293B))),
             ),
             const SizedBox(height: 10),
             Expanded(
               child: _cargando
                   ? const Center(child: CircularProgressIndicator())
                   : _carnetCtrl.text.trim().isEmpty
-                      ? const Center(child: Text('Escanea o ingresa un carnet para ver pendientes', textAlign: TextAlign.center, style: TextStyle(color: Colors.grey)))
+                      ? const Center(
+                          child: Text('Escanea o ingresa un carnet para ver y devolver los utensilios pendientes',
+                              textAlign: TextAlign.center, style: TextStyle(color: Colors.grey)))
                       : pendientesFiltrados.isEmpty
-                          ? Center(child: Text('Este estudiante no tiene $_categoriaSeleccionada(s) pendientes', textAlign: TextAlign.center, style: const TextStyle(color: Colors.green, fontWeight: FontWeight.bold)))
+                          ? Center(
+                              child: Text('Este estudiante no tiene $_categoriaSeleccionada(s) pendientes',
+                                  textAlign: TextAlign.center, style: const TextStyle(color: Colors.green, fontWeight: FontWeight.bold)))
                           : ListView.builder(
                               itemCount: pendientesFiltrados.length,
                               itemBuilder: (context, index) {
@@ -839,20 +1028,18 @@ class _PendientesPageState extends State<PendientesPage> {
                                 final fechaRetiro = item['fecha_retiro'] ?? '';
 
                                 return Card(
-                                  color: Colors.white,
                                   margin: const EdgeInsets.only(bottom: 12),
-                                  elevation: 1,
-                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                                   child: ListTile(
+                                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                                     leading: CircleAvatar(
                                       backgroundColor: const Color(0xFFFFEBEE),
                                       child: Icon(_iconoTipo[tipo] ?? Icons.restaurant, color: const Color(0xFFC62828)),
                                     ),
-                                    title: Text(tipo, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                                    title: Text(tipo, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                                     subtitle: Text('Retirado: $fechaRetiro', style: const TextStyle(fontSize: 12)),
                                     trailing: ElevatedButton.icon(
                                       style: ElevatedButton.styleFrom(
-                                        backgroundColor: Colors.grey.shade900,
+                                        backgroundColor: const Color(0xFF1E293B),
                                         foregroundColor: Colors.white,
                                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                                         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -874,7 +1061,7 @@ class _PendientesPageState extends State<PendientesPage> {
 }
 
 // ==========================================
-// 5. REGISTRAR NUEVO ESTUDIANTE
+// 5. PÁGINA PARA REGISTRAR NUEVO ESTUDIANTE
 // ==========================================
 class RegistrarEstudiantePage extends StatefulWidget {
   final String codigoInicial;
@@ -899,7 +1086,12 @@ class _RegistrarEstudiantePageState extends State<RegistrarEstudiantePage> {
   }
 
   void _msg(String texto, {bool error = false}) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(texto), backgroundColor: error ? Colors.red.shade800 : Colors.grey.shade800));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(texto),
+        backgroundColor: error ? const Color(0xFFC62828) : const Color(0xFF2E7D32),
+      ),
+    );
   }
 
   Future<void> _guardarEstudiante() async {
@@ -938,33 +1130,51 @@ class _RegistrarEstudiantePageState extends State<RegistrarEstudiantePage> {
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     return Scaffold(
-      appBar: AppBar(backgroundColor: cs.primary, foregroundColor: Colors.white, title: const Text('Registrar Nuevo Estudiante', style: TextStyle(fontWeight: FontWeight.bold)), centerTitle: true),
+      appBar: AppBar(
+        backgroundColor: cs.primary,
+        foregroundColor: Colors.white,
+        title: const Text('Registrar Nuevo Estudiante', style: TextStyle(fontWeight: FontWeight.bold)),
+        centerTitle: true,
+      ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
         child: Card(
-          elevation: 2,
-          color: Colors.white,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
           child: Padding(
-            padding: const EdgeInsets.all(20),
+            padding: const EdgeInsets.all(22),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Text('Información del Alumno', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                 const SizedBox(height: 15),
-                TextField(controller: _nombreCtrl, decoration: const InputDecoration(labelText: 'Nombre completo', prefixIcon: Icon(Icons.person_outline))),
+                TextField(
+                  controller: _nombreCtrl,
+                  decoration: const InputDecoration(labelText: 'Nombre completo', prefixIcon: Icon(Icons.person_outline)),
+                ),
                 const SizedBox(height: 15),
-                TextField(controller: _carnetCtrl, decoration: const InputDecoration(labelText: 'Número de Carnet', prefixIcon: Icon(Icons.badge_outlined))),
+                TextField(
+                  controller: _carnetCtrl,
+                  decoration: const InputDecoration(labelText: 'Número de Carnet', prefixIcon: Icon(Icons.badge_outlined)),
+                ),
                 const SizedBox(height: 15),
-                TextField(controller: _codigoCtrl, decoration: const InputDecoration(labelText: 'Código de barras', prefixIcon: Icon(Icons.qr_code))),
+                TextField(
+                  controller: _codigoCtrl,
+                  decoration: const InputDecoration(labelText: 'Código de barras', prefixIcon: Icon(Icons.qr_code)),
+                ),
                 const SizedBox(height: 15),
-                TextField(controller: _gradoCtrl, decoration: const InputDecoration(labelText: 'Grado / Sección (Ej: 2° Software)', prefixIcon: Icon(Icons.school_outlined))),
+                TextField(
+                  controller: _gradoCtrl,
+                  decoration: const InputDecoration(labelText: 'Grado / Seccion (Ej: 2° Software)', prefixIcon: Icon(Icons.school_outlined)),
+                ),
                 const SizedBox(height: 25),
                 SizedBox(
                   width: double.infinity,
                   height: 52,
                   child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(backgroundColor: cs.primary, foregroundColor: Colors.white, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14))),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: cs.primary,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                    ),
                     onPressed: _guardando ? null : _guardarEstudiante,
                     child: Text(_guardando ? 'Guardando...' : 'Guardar Estudiante', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                   ),
@@ -979,7 +1189,7 @@ class _RegistrarEstudiantePageState extends State<RegistrarEstudiantePage> {
 }
 
 // ==========================================
-// 6. INFORMES HISTÓRICOS (Con selector de fecha y gráficas)
+// 6. PÁGINA DE INFORMES Y EXPORTACIÓN (Guía 8 - Guardado en Teléfono)
 // ==========================================
 class InformesPage extends StatefulWidget {
   const InformesPage({super.key});
@@ -992,13 +1202,18 @@ class _InformesPageState extends State<InformesPage> {
   final _fechaController = TextEditingController();
   bool _cargando = false;
   List<dynamic> _informe = [];
-  bool _mostrarBarras = false;
 
   final _iconoTipo = const {
     'Plato': Icons.dinner_dining,
     'Vaso': Icons.local_drink,
     'Taza': Icons.coffee,
   };
+
+  @override
+  void initState() {
+    super.initState();
+    _fechaController.text = DateTime.now().toString().split(' ')[0];
+  }
 
   Future<void> _seleccionarFecha(BuildContext context) async {
     DateTime? fechaSeleccionada = await showDatePicker(
@@ -1022,8 +1237,9 @@ class _InformesPageState extends State<InformesPage> {
 
     setState(() => _cargando = true);
     try {
-      final url = Uri.parse('$kBaseUrl/informe/$fecha');
+      final url = Uri.parse('$kBaseUrl/informe/$fecha'); // Reutiliza endpoint /informe/:fecha[cite: 2]
       final response = await http.get(url);
+      
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         setState(() {
@@ -1039,18 +1255,94 @@ class _InformesPageState extends State<InformesPage> {
     }
   }
 
-  List<PieChartSectionData> _generarDatosPastel() {
-    return _informe.map((item) {
-      final tipo = item['tipo'] ?? 'Utensilio';
-      final entregados = double.tryParse(item['entregados'].toString()) ?? 0.0;
-      return PieChartSectionData(
-        value: entregados,
-        title: "$tipo\n($entregados)",
-        color: tipo == 'Plato' ? Colors.blue : (tipo == 'Vaso' ? Colors.teal : Colors.purple),
-        radius: 65,
-        titleStyle: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.white),
+  // EXPORTAR Y GUARDAR PDF EN EL TELÉFONO[cite: 2]
+  Future<void> _exportarPDF() async {
+    if (_informe.isEmpty) return;
+
+    final pdf = pw.Document();
+    final fecha = _fechaController.text;
+
+    pdf.addPage(
+      pw.Page(
+        build: (pw.Context context) => pw.Column(
+          crossAxisAlignment: pw.CrossAxisAlignment.start,
+          children: [
+            pw.Text("Informe Diario - Cocina Escolar INFRAMEN", style: pw.TextStyle(fontSize: 20, fontWeight: pw.FontWeight.bold)),
+            pw.SizedBox(height: 6),
+            pw.Text("Fecha del reporte: $fecha", style: const pw.TextStyle(fontSize: 12)),
+            pw.SizedBox(height: 20),
+            pw.Table.fromTextArray(
+              headers: ['Utensilio', 'Entregados', 'Devueltos', 'Pendientes'],
+              data: _informe.map((item) => [
+                item['tipo'].toString(),
+                item['entregados'].toString(),
+                (item['devueltos'] ?? 0).toString(),
+                (item['pendientes'] ?? 0).toString()
+              ]).toList(),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    // Permite guardar e imprimir el PDF en el teléfono directamente[cite: 2]
+    await Printing.layoutPdf(
+      onLayout: (format) async => pdf.save(),
+      name: 'informe_cocina_$fecha.pdf',
+    );
+  }
+
+  // EXPORTAR Y GUARDAR EXCEL (.XLSX) EN EL TELÉFONO[cite: 2]
+  Future<void> _exportarExcel() async {
+    if (_informe.isEmpty) return;
+
+    try {
+      var excel = excel_pkg.Excel.createExcel();
+      excel_pkg.Sheet sheet = excel['Informe'];
+      excel.setDefaultSheet('Informe');
+
+      sheet.appendRow([
+        excel_pkg.TextCellValue("Utensilio"),
+        excel_pkg.TextCellValue("Entregados"),
+        excel_pkg.TextCellValue("Devueltos"),
+        excel_pkg.TextCellValue("Pendientes")
+      ]);
+
+      for (var item in _informe) {
+        sheet.appendRow([
+          excel_pkg.TextCellValue(item['tipo'].toString()),
+          excel_pkg.IntCellValue(int.tryParse(item['entregados'].toString()) ?? 0),
+          excel_pkg.IntCellValue(int.tryParse((item['devueltos'] ?? 0).toString()) ?? 0),
+          excel_pkg.IntCellValue(int.tryParse((item['pendientes'] ?? 0).toString()) ?? 0),
+        ]);
+      }
+
+      final fileBytes = excel.save();
+      if (fileBytes != null) {
+        final directory = await getApplicationDocumentsDirectory();
+        final path = "${directory.path}/informe_cocina_${_fechaController.text}.xlsx";
+        final file = File(path);
+        await file.writeAsBytes(fileBytes, flush: true);
+
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Guardado en teléfono: informe_cocina_${_fechaController.text}.xlsx'),
+            backgroundColor: const Color(0xFF2E7D32),
+            action: SnackBarAction(
+              label: 'ABRIR',
+              textColor: Colors.white,
+              onPressed: () => OpenFile.open(path),
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error al guardar archivo Excel: $e'), backgroundColor: Colors.red),
       );
-    }).toList();
+    }
   }
 
   @override
@@ -1060,15 +1352,8 @@ class _InformesPageState extends State<InformesPage> {
       appBar: AppBar(
         backgroundColor: cs.primary,
         foregroundColor: Colors.white,
-        title: const Text('Informe Histórico', style: TextStyle(fontWeight: FontWeight.bold)),
+        title: const Text('Exportación de Informes', style: TextStyle(fontWeight: FontWeight.bold)),
         centerTitle: true,
-        actions: [
-          IconButton(
-            icon: Icon(_mostrarBarras ? Icons.pie_chart : Icons.bar_chart),
-            onPressed: () => setState(() => _mostrarBarras = !_mostrarBarras),
-            tooltip: 'Cambiar vista de gráfica',
-          ),
-        ],
       ),
       body: Padding(
         padding: const EdgeInsets.all(20),
@@ -1082,7 +1367,7 @@ class _InformesPageState extends State<InformesPage> {
                 suffixIcon: IconButton(
                   icon: Icon(Icons.event_note, color: cs.primary),
                   onPressed: () => _seleccionarFecha(context),
-                  tooltip: 'Calendario',
+                  tooltip: 'Abrir Calendario',
                 ),
               ),
             ),
@@ -1091,42 +1376,57 @@ class _InformesPageState extends State<InformesPage> {
               width: double.infinity,
               height: 48,
               child: ElevatedButton.icon(
-                style: ElevatedButton.styleFrom(backgroundColor: cs.primary, foregroundColor: Colors.white, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14))),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: cs.primary,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                ),
                 onPressed: _cargando ? null : _obtenerInformeHistorico,
                 icon: const Icon(Icons.search_rounded),
-                label: const Text('Consultar Informe', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                label: const Text('Obtener Informe', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
               ),
             ),
             const SizedBox(height: 15),
-            SizedBox(
-              height: 180,
-              child: _cargando
-                  ? const Center(child: CircularProgressIndicator())
-                  : _informe.isEmpty
-                      ? const Center(child: Text('Selecciona una fecha para ver la gráfica', style: TextStyle(color: Colors.grey)))
-                      : _mostrarBarras
-                          ? BarChart(
-                              BarChartData(
-                                barGroups: _informe.asMap().entries.map((e) {
-                                  double val = double.tryParse(e.value['entregados'].toString()) ?? 0.0;
-                                  return BarChartGroupData(x: e.key, barRods: [BarChartRodData(toY: val, color: Colors.teal, width: 20)]);
-                                }).toList(),
-                                titlesData: const FlTitlesData(
-                                  bottomTitles: AxisTitles(sideTitles: SideTitles(showTitles: true)),
-                                  leftTitles: AxisTitles(sideTitles: SideTitles(showTitles: true)),
-                                ),
-                              ),
-                            )
-                          : PieChart(PieChartData(sections: _generarDatosPastel(), centerSpaceRadius: 35)),
+            Row(
+              children: [
+                Expanded(
+                  child: ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFC62828),
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                    onPressed: _informe.isEmpty ? null : _exportarPDF, // Exportar a PDF[cite: 2]
+                    icon: const Icon(Icons.picture_as_pdf),
+                    label: const Text('Exportar PDF'),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF2E7D32),
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                    onPressed: _informe.isEmpty ? null : _exportarExcel, // Exportar a Excel[cite: 2]
+                    icon: const Icon(Icons.table_chart),
+                    label: const Text('Exportar Excel'),
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: 15),
             const Divider(),
-            const SizedBox(height: 10),
             Expanded(
               child: _cargando
                   ? const Center(child: CircularProgressIndicator())
                   : _informe.isEmpty
-                      ? const Center(child: Text('No hay registros detallados para mostrar', style: TextStyle(color: Colors.grey)))
+                      ? const Center(
+                          child: Text('Consulta una fecha para ver el detalle del informe',
+                              textAlign: TextAlign.center, style: TextStyle(color: Colors.grey)))
                       : ListView.builder(
                           itemCount: _informe.length,
                           itemBuilder: (context, index) {
@@ -1135,13 +1435,14 @@ class _InformesPageState extends State<InformesPage> {
                             final entregados = item['entregados'] ?? 0;
 
                             return Card(
-                              color: Colors.white,
                               margin: const EdgeInsets.only(bottom: 12),
-                              elevation: 1,
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                               child: ListTile(
-                                leading: CircleAvatar(backgroundColor: cs.primary.withOpacity(0.1), child: Icon(_iconoTipo[tipo] ?? Icons.history, color: cs.primary)),
-                                title: Text("Utensilio: $tipo", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                                contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                                leading: CircleAvatar(
+                                  backgroundColor: cs.primary.withOpacity(0.1),
+                                  child: Icon(_iconoTipo[tipo] ?? Icons.history, color: cs.primary),
+                                ),
+                                title: Text("Utensilio: $tipo", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                                 subtitle: Text("Entregados: $entregados", style: const TextStyle(fontSize: 13)),
                               ),
                             );
@@ -1165,33 +1466,42 @@ class ConfiguracionPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     return Scaffold(
-      appBar: AppBar(backgroundColor: cs.primary, foregroundColor: Colors.white, title: const Text('Configuración', style: TextStyle(fontWeight: FontWeight.bold)), centerTitle: true),
+      appBar: AppBar(
+        backgroundColor: cs.primary,
+        foregroundColor: Colors.white,
+        title: const Text('Configuración', style: TextStyle(fontWeight: FontWeight.bold)),
+        centerTitle: true,
+      ),
       body: ListView(
         padding: const EdgeInsets.all(20),
         children: [
           const Text('Conexión con el Servidor', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey)),
           const SizedBox(height: 10),
           Card(
-            color: Colors.white,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-            child: const ListTile(
-              leading: Icon(Icons.dns_rounded, color: Color(0xFFB71C1C)),
-              title: Text('URL Base del Backend'),
-              subtitle: Text(kBaseUrl),
-              trailing: Icon(Icons.check_circle, color: Colors.green),
+            child: ListTile(
+              leading: const Icon(Icons.dns_rounded, color: Color(0xFFB71C1C)),
+              title: const Text('URL Base del Backend'),
+              subtitle: const Text(kBaseUrl),
+              trailing: const Icon(Icons.check_circle, color: Colors.green),
             ),
           ),
           const SizedBox(height: 20),
           const Text('Información del Sistema', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey)),
           const SizedBox(height: 10),
-          Card(
-            color: Colors.white,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-            child: const Column(
+          const Card(
+            child: Column(
               children: [
-                ListTile(leading: Icon(Icons.school, color: Color(0xFFB71C1C)), title: Text('Institución'), subtitle: Text('INFRAMEN · Desarrollo de Software')),
+                ListTile(
+                  leading: Icon(Icons.school, color: Color(0xFFB71C1C)),
+                  title: Text('Institución'),
+                  subtitle: Text('INFRAMEN · Desarrollo de Software'),
+                ),
                 Divider(height: 1),
-                ListTile(leading: Icon(Icons.info_outline, color: Color(0xFFB71C1C)), title: Text('Versión de la App'), subtitle: Text('1.0.1+2')),
+                ListTile(
+                  leading: Icon(Icons.info_outline, color: Color(0xFFB71C1C)),
+                  title: Text('Versión de la App'),
+                  subtitle: Text('1.0.0+1'),
+                ),
               ],
             ),
           ),
@@ -1202,7 +1512,7 @@ class ConfiguracionPage extends StatelessWidget {
 }
 
 // ==========================================
-// PANTALLA DE ESCANEO
+// PANTALLA DE ESCANEO DE CÁMARA
 // ==========================================
 class EscaneoPage extends StatefulWidget {
   final ValueChanged<String> onCodigoEscaneado;
@@ -1223,6 +1533,7 @@ class _EscaneoPageState extends State<EscaneoPage> {
       if (code != null) {
         _scanned = true;
         setState(() {});
+
         Future.delayed(const Duration(milliseconds: 500), () {
           if (mounted) {
             widget.onCodigoEscaneado(code);
@@ -1237,15 +1548,22 @@ class _EscaneoPageState extends State<EscaneoPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.black,
-      appBar: AppBar(title: const Text('ESCANEAR CÓDIGO', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)), backgroundColor: const Color(0xFF212121), foregroundColor: Colors.white, centerTitle: true),
+      appBar: AppBar(
+        title: const Text('ESCANEAR CÓDIGO', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+        backgroundColor: const Color(0xFF1E293B),
+        foregroundColor: Colors.white,
+        centerTitle: true,
+      ),
       body: Stack(
         children: [
           MobileScanner(onDetect: _onDetect),
           Center(
             child: Container(
-              width: 300,
+              width: 280,
               height: 200,
-              decoration: BoxDecoration(border: Border.all(color: Colors.transparent)),
+              decoration: const BoxDecoration(
+                color: Colors.transparent,
+              ),
               child: Stack(
                 children: [
                   Positioned(top: 0, left: 0, child: _esquinaMarco()),
@@ -1262,8 +1580,22 @@ class _EscaneoPageState extends State<EscaneoPage> {
               child: Center(
                 child: Container(
                   padding: const EdgeInsets.all(24),
-                  decoration: BoxDecoration(color: const Color(0xFFC62828), shape: BoxShape.circle),
-                  child: const Icon(Icons.check, color: Colors.white, size: 64),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFC62828),
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.redAccent.withOpacity(0.6),
+                        blurRadius: 20,
+                        spreadRadius: 5,
+                      )
+                    ],
+                  ),
+                  child: const Icon(
+                    Icons.check,
+                    color: Colors.white,
+                    size: 64,
+                  ),
                 ),
               ),
             ),
