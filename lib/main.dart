@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 import 'package:excel/excel.dart' as excel_pkg;
@@ -13,7 +14,45 @@ import 'package:open_file_plus/open_file_plus.dart';
 
 const String kBaseUrl = 'http://10.198.197.181:3000';
 
-void main() => runApp(const CocinaEscolarApp());
+// Servicio Global de Notificaciones Locales
+final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
+
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // Configuración de inicialización para Android
+  const AndroidInitializationSettings initializationSettingsAndroid =
+      AndroidInitializationSettings('@mipmap/ic_launcher');
+
+  const InitializationSettings initializationSettings = InitializationSettings(
+    android: initializationSettingsAndroid,
+  );
+
+  await flutterLocalNotificationsPlugin.initialize(initializationSettings);
+  runApp(const CocinaEscolarApp());
+}
+
+Future<void> mostrarNotificacionLocal(String titulo, String cuerpo) async {
+  const AndroidNotificationDetails androidPlatformChannelSpecifics =
+      AndroidNotificationDetails(
+    'canal_cafetin_inframen',
+    'Notificaciones Cafetín',
+    channelDescription: 'Avisos en tiempo real sobre retiros y devoluciones',
+    importance: Importance.max,
+    priority: Priority.high,
+    showWhen: true,
+  );
+
+  const NotificationDetails platformChannelSpecifics =
+      NotificationDetails(android: androidPlatformChannelSpecifics);
+
+  await flutterLocalNotificationsPlugin.show(
+    DateTime.now().millisecond,
+    titulo,
+    cuerpo,
+    platformChannelSpecifics,
+  );
+}
 
 class CocinaEscolarApp extends StatelessWidget {
   const CocinaEscolarApp({super.key});
@@ -221,20 +260,14 @@ class InventarioModuloPage extends StatelessWidget {
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
 
-  Widget _buildAppLogo({double size = 80}) {
+  Widget _buildAppLogo({double size = 85}) {
     return Image.asset(
       'assets/icon/Logo_IN.PNG',
       width: size,
       height: size,
       fit: BoxFit.contain,
       errorBuilder: (context, error, stackTrace) {
-        return Image.asset(
-          'assets/icon/logo.png',
-          width: size,
-          height: size,
-          fit: BoxFit.contain,
-          errorBuilder: (_, __, ___) => Icon(Icons.restaurant_menu, size: size, color: const Color(0xFFB71C1C)),
-        );
+        return Icon(Icons.school_rounded, size: size, color: const Color(0xFFB71C1C));
       },
     );
   }
@@ -246,7 +279,7 @@ class HomePage extends StatelessWidget {
       appBar: AppBar(
         backgroundColor: cs.primary,
         foregroundColor: Colors.white,
-        title: const Text('Cocina Escolar', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 19)),
+        title: const Text('Cocina Escolar INFRAMEN', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
         centerTitle: true,
         elevation: 0,
       ),
@@ -257,35 +290,39 @@ class HomePage extends StatelessWidget {
             Card(
               elevation: 0,
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(20),
+                borderRadius: BorderRadius.circular(24),
                 side: const BorderSide(color: Color(0xFFE2E8F0)),
               ),
               child: Container(
                 width: double.infinity,
-                padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
+                padding: const EdgeInsets.symmetric(vertical: 28, horizontal: 20),
                 decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(20),
+                  gradient: LinearGradient(
+                    colors: [Colors.white, const Color(0xFFFFF5F5)],
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                  ),
+                  borderRadius: BorderRadius.circular(24),
                 ),
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    _buildAppLogo(size: 95),
-                    const SizedBox(height: 12),
+                    _buildAppLogo(size: 90),
+                    const SizedBox(height: 14),
                     const Text(
                       'INFRAMEN',
                       style: TextStyle(
-                        fontSize: 20,
+                        fontSize: 22,
                         fontWeight: FontWeight.bold,
                         color: Color(0xFF1E293B),
-                        letterSpacing: 1.2,
+                        letterSpacing: 1.5,
                       ),
                     ),
-                    const SizedBox(height: 2),
+                    const SizedBox(height: 4),
                     const Text(
-                      'Control y Gestión de Cocina Escolar',
+                      'Sistema Integral de Gestión de Cafetín',
                       textAlign: TextAlign.center,
-                      style: TextStyle(fontSize: 12, color: Color(0xFF64748B)),
+                      style: TextStyle(fontSize: 13, color: Color(0xFF64748B), fontWeight: FontWeight.w500),
                     ),
                   ],
                 ),
@@ -295,7 +332,7 @@ class HomePage extends StatelessWidget {
             const Align(
               alignment: Alignment.centerLeft,
               child: Text(
-                'Categorías Principales',
+                'Módulos de Operación',
                 style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
               ),
             ),
@@ -359,7 +396,7 @@ class _AccesoCard extends StatelessWidget {
         onTap: onTap,
         borderRadius: BorderRadius.circular(20),
         child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+          padding: const EdgeInsets.symmetric(vertical: 22, horizontal: 16),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(20),
             border: Border.all(color: const Color(0xFFE2E8F0)),
@@ -470,6 +507,10 @@ class _RegistrarPageState extends State<RegistrarPage> {
 
       if (retResp.statusCode == 200 || retResp.statusCode == 201) {
         _msg('¡Retiro de $_tipo registrado con éxito!');
+        await mostrarNotificacionLocal(
+          'Retiro Registrado',
+          'Se registró un préstamo de $_tipo para el carnet $codigo',
+        );
         _carnetCtrl.clear();
       } else {
         _msg('Error al registrar el retiro', error: true);
@@ -993,6 +1034,10 @@ class _PendientesPageState extends State<PendientesPage> {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('¡Devolución de $tipo registrada con éxito!'), backgroundColor: Colors.green.shade800),
+        );
+        await mostrarNotificacionLocal(
+          'Devolución Registrada',
+          'Se ha completado la devolución de $tipo de forma exitosa.',
         );
         obtenerPendientes();
       } else {
@@ -1610,7 +1655,7 @@ class ConfiguracionPage extends StatelessWidget {
                 ListTile(
                   leading: Icon(Icons.info_outline, color: Color(0xFFB71C1C)),
                   title: Text('Versión de la App'),
-                  subtitle: Text('1.0.0+1'),
+                  subtitle: Text('1.0.0+1 (Con Notificaciones Locales)'),
                 ),
               ],
             ),
