@@ -29,3 +29,5 @@ flutter:
   uses-material-design: true
   assets:
     - assets/icon/Logo_IN.PNG
+    - assets/icon/Utensilios.png
+    - assets/icon/inventario_IN.png
