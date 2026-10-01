@@ -783,7 +783,9 @@ class _InventarioModuloPageState extends State<InventarioModuloPage> {
   }
 }
 
-// PANTALLA CRUD INVENTARIO (CON EDICIÓN INTEGRADA)
+// ─────────────────────────────────────────────
+// PANTALLA: CRUD INVENTARIO (CORREGIDA Y VALIDADA)
+// ─────────────────────────────────────────────
 class InventarioCrudPage extends StatefulWidget {
   const InventarioCrudPage({super.key});
 
@@ -810,44 +812,69 @@ class _InventarioCrudPageState extends State<InventarioCrudPage> {
     super.dispose();
   }
 
+  // CORRECCIÓN: Consultar directamente el endpoint /utensilios para listar todo el inventario
   Future<void> obtenerInventario() async {
     setState(() => _cargando = true);
     try {
-      final url = Uri.parse('$kBaseUrl/informe/${DateTime.now().toString().split(' ')[0]}');
+      final url = Uri.parse('$kBaseUrl/utensilios');
       final response = await http.get(url);
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         setState(() {
-          utensilios = data is List ? data : (data['informe'] ?? []);
+          utensilios = data is List ? data : [];
         });
       }
     } catch (_) {
-      // Manejo silencioso o notificación de red
+      mostrarNotificacionApp('Error', 'No se pudo cargar el inventario', esError: true);
     } finally {
       if (mounted) setState(() => _cargando = false);
     }
   }
 
+  // VALIDACIÓN Y ADICIÓN DE UTENSILIOS
   Future<void> agregarUtensilio() async {
-    if (tipoController.text.trim().isEmpty || cantidadController.text.trim().isEmpty) return;
+    final tipoTexto = tipoController.text.trim();
+    final cantidadTexto = cantidadController.text.trim();
+
+    // Validación de campos vacíos
+    if (tipoTexto.isEmpty || cantidadTexto.isEmpty) {
+      mostrarNotificacionApp('Aviso', 'Completa todos los campos obligatorios', esError: true);
+      return;
+    }
+
+    // Validación de cantidad numérica entera válida
+    final cantidadNumero = int.tryParse(cantidadTexto);
+    if (cantidadNumero == null || cantidadNumero < 0) {
+      mostrarNotificacionApp('Aviso', 'Ingresa una cantidad entera válida (>= 0)', esError: true);
+      return;
+    }
+
     try {
       final url = Uri.parse('$kBaseUrl/utensilios');
-      await http.post(url,
-          headers: {'Content-Type': 'application/json'},
-          body: jsonEncode({
-            'tipo': tipoController.text.trim(),
-            'cantidad': int.parse(cantidadController.text.trim())
-          }));
-      tipoController.clear();
-      cantidadController.clear();
-      mostrarNotificacionApp('Éxito', 'Utensilio agregado correctamente');
-      obtenerInventario();
+      final response = await http.post(
+        url,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'tipo': tipoTexto,
+          'cantidad': cantidadNumero,
+        }),
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        tipoController.clear();
+        cantidadController.clear();
+        mostrarNotificacionApp('Éxito', 'Utensilio agregado correctamente');
+        await obtenerInventario(); // Refresca correctamente la lista completa
+      } else {
+        final errorData = jsonDecode(response.body);
+        mostrarNotificacionApp('Error', errorData['mensaje'] ?? 'No se pudo agregar', esError: true);
+      }
     } catch (e) {
-      mostrarNotificacionApp('Error', 'No se pudo agregar el utensilio', esError: true);
+      mostrarNotificacionApp('Error', 'Falla de conexión con el servidor', esError: true);
     }
   }
 
-  // NUEVA FUNCIÓN PARA EDITAR UTENSILIO EXISTENTE
+  // FUNCIÓN PARA EDITAR UTENSILIO EXISTENTE
   Future<void> editarUtensilio(int id, String tipoActual, int cantidadActual) async {
     final editTipoController = TextEditingController(text: tipoActual);
     final editCantidadController = TextEditingController(text: cantidadActual.toString());
@@ -908,12 +935,18 @@ class _InventarioCrudPageState extends State<InventarioCrudPage> {
     );
   }
 
+  // ELIMINAR UTENSILIO
   Future<void> eliminarUtensilio(int id) async {
     try {
       final url = Uri.parse('$kBaseUrl/utensilios/$id');
-      await http.delete(url);
-      mostrarNotificacionApp('Aviso', 'Utensilio eliminado');
-      obtenerInventario();
+      final response = await http.delete(url);
+      if (response.statusCode == 200) {
+        mostrarNotificacionApp('Aviso', 'Utensilio eliminado');
+        obtenerInventario();
+      } else {
+        final errorData = jsonDecode(response.body);
+        mostrarNotificacionApp('Error', errorData['mensaje'] ?? 'No se pudo eliminar', esError: true);
+      }
     } catch (e) {
       mostrarNotificacionApp('Error', 'No se pudo eliminar', esError: true);
     }
@@ -961,7 +994,7 @@ class _InventarioCrudPageState extends State<InventarioCrudPage> {
               ),
             ),
             const SizedBox(height: 20),
-            _sectionTitle('Lista Actual en Inventario'),
+            _sectionTitle('Lista Actual en Inventario (Plato, Vaso, Taza y Nuevos)'),
             Expanded(
               child: _cargando
                   ? const Center(child: CircularProgressIndicator(color: kPrimary))
@@ -974,7 +1007,7 @@ class _InventarioCrudPageState extends State<InventarioCrudPage> {
                             final item = utensilios[index];
                             final id = item['id'] ?? index + 1;
                             final tipo = item['tipo'] ?? 'Utensilio';
-                            final cantidad = int.tryParse((item['entregados'] ?? item['cantidad'] ?? 0).toString()) ?? 0;
+                            final cantidad = int.tryParse((item['cantidad'] ?? 0).toString()) ?? 0;
 
                             return Container(
                               decoration: BoxDecoration(
@@ -986,7 +1019,7 @@ class _InventarioCrudPageState extends State<InventarioCrudPage> {
                               child: ListTile(
                                 leading: const Icon(Icons.kitchen, color: kPrimary),
                                 title: Text("Utensilio: $tipo", style: const TextStyle(fontWeight: FontWeight.w700)),
-                                subtitle: Text("Cantidad: $cantidad"),
+                                subtitle: Text("Cantidad disponible: $cantidad"),
                                 trailing: Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
@@ -2600,35 +2633,19 @@ class _InformesPageState extends State<InformesPage> {
             ),
           ]),
 
-          const SizedBox(height: 18),
-          const Divider(color: kBorder, height: 1),
-          const SizedBox(height: 14),
+          const SizedBox(height: 20),
+          _sectionTitle('Resultado del Informe'),
 
           Expanded(
             child: _cargando
-                ? const Center(
-                    child: CircularProgressIndicator(color: kPrimary))
+                ? const Center(child: CircularProgressIndicator(color: kPrimary))
                 : _informe.isEmpty
-                    ? Center(
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(Icons.history_rounded,
-                                size: 52, color: kBorder),
-                            const SizedBox(height: 14),
-                            const Text(
-                              'Selecciona una fecha y\nobtén el informe',
-                              textAlign: TextAlign.center,
-                              style:
-                                  TextStyle(color: kTextSub, fontSize: 14),
-                            ),
-                          ],
-                        ),
-                      )
+                    ? const Center(
+                        child: Text('Sin datos para la fecha seleccionada',
+                            style: TextStyle(color: kTextSub)))
                     : ListView.separated(
                         itemCount: _informe.length,
-                        separatorBuilder: (_, __) =>
-                            const SizedBox(height: 10),
+                        separatorBuilder: (_, __) => const SizedBox(height: 10),
                         itemBuilder: (_, i) {
                           final item = _informe[i];
                           final tipo = item['tipo'] ?? 'Utensilio';
@@ -2640,11 +2657,11 @@ class _InformesPageState extends State<InformesPage> {
                           return Container(
                             decoration: BoxDecoration(
                               color: kSurface,
-                              borderRadius: BorderRadius.circular(16),
+                              borderRadius: BorderRadius.circular(18),
                               border: Border.all(color: kBorder),
                               boxShadow: kShadowSoft,
                             ),
-                            padding: const EdgeInsets.all(16),
+                            padding: const EdgeInsets.all(18),
                             child: Row(children: [
                               Container(
                                 width: 48,
@@ -2653,35 +2670,38 @@ class _InformesPageState extends State<InformesPage> {
                                   color: col.withOpacity(0.1),
                                   borderRadius: BorderRadius.circular(14),
                                 ),
-                                child: Icon(
-                                    _iconoTipo[tipo] ?? Icons.history,
-                                    color: col,
-                                    size: 24),
+                                child: Icon(_iconoTipo[tipo] ?? Icons.analytics,
+                                    color: col, size: 24),
                               ),
                               const SizedBox(width: 14),
-                              Text(tipo,
-                                  style: const TextStyle(
-                                      fontWeight: FontWeight.w700,
-                                      fontSize: 15,
-                                      color: kTextMain)),
-                              const Spacer(),
-                              Row(
-                                children: [
-                                  _StatHeader(
-                                      value: '$entregados',
-                                      label: 'Entregados',
-                                      color: kBlue),
-                                  const SizedBox(width: 16),
-                                  _StatHeader(
-                                      value: '$devueltos',
-                                      label: 'Devueltos',
-                                      color: kGreen),
-                                  const SizedBox(width: 16),
-                                  _StatHeader(
-                                      value: '$pendientes',
-                                      label: 'Pendientes',
-                                      color: kPrimary),
-                                ],
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(tipo,
+                                        style: const TextStyle(
+                                            fontWeight: FontWeight.w700,
+                                            fontSize: 14,
+                                            color: kTextMain)),
+                                    const SizedBox(height: 6),
+                                    Row(children: [
+                                      _Stat(
+                                          label: 'Entregados',
+                                          value: '$entregados',
+                                          color: kBlue),
+                                      const SizedBox(width: 14),
+                                      _Stat(
+                                          label: 'Devueltos',
+                                          value: '$devueltos',
+                                          color: kGreen),
+                                      const SizedBox(width: 14),
+                                      _Stat(
+                                          label: 'Pendientes',
+                                          value: '$pendientes',
+                                          color: kPrimary),
+                                    ]),
+                                  ],
+                                ),
                               ),
                             ]),
                           );
@@ -2694,181 +2714,51 @@ class _InformesPageState extends State<InformesPage> {
   }
 }
 
-class _StatHeader extends StatelessWidget {
-  final String value;
-  final String label;
-  final Color color;
-
-  const _StatHeader({
-    required this.value,
-    required this.label,
-    required this.color,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Text(value,
-            style: TextStyle(
-                fontWeight: FontWeight.w800, fontSize: 14, color: color)),
-        Text(label,
-            style: const TextStyle(
-                fontSize: 10, color: kTextSub, fontWeight: FontWeight.w500)),
-      ],
-    );
-  }
-}
-
 // ─────────────────────────────────────────────
-// ESCÁNER DE CÓDIGOS DE BARRAS / QR
+// PANTALLA: ESCANEO (MOBILE SCANNER)
 // ─────────────────────────────────────────────
 class EscaneoPage extends StatefulWidget {
   final ValueChanged<String> onCodigoEscaneado;
   const EscaneoPage({super.key, required this.onCodigoEscaneado});
+
   @override
   State<EscaneoPage> createState() => _EscaneoPageState();
 }
 
-class _EscaneoPageState extends State<EscaneoPage>
-    with SingleTickerProviderStateMixin {
-  bool _scanned = false;
-  late AnimationController _pulse;
+class _EscaneoPageState extends State<EscaneoPage> {
+  bool _encontrado = false;
+  late MobileScannerController cameraController;
 
   @override
   void initState() {
     super.initState();
-    _pulse = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 900),
-    )..repeat(reverse: true);
+    cameraController = MobileScannerController();
   }
 
   @override
   void dispose() {
-    _pulse.dispose();
+    cameraController.dispose();
     super.dispose();
-  }
-
-  void _onDetect(BarcodeCapture capture) {
-    if (_scanned) return;
-    final code = capture.barcodes.firstOrNull?.rawValue;
-    if (code != null) {
-      _scanned = true;
-      setState(() {});
-      Future.delayed(const Duration(milliseconds: 500), () {
-        if (mounted) {
-          widget.onCodigoEscaneado(code);
-          Navigator.pop(context);
-        }
-      });
-    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.black,
-      appBar: AppBar(
-        title: const Text('ESCANEAR CÓDIGO'),
-        backgroundColor: kPrimaryDeep,
-        foregroundColor: Colors.white,
-        centerTitle: true,
-      ),
-      body: Stack(
-        children: [
-          MobileScanner(onDetect: _onDetect),
-          Center(
-            child: SizedBox(
-              width: 260,
-              height: 200,
-              child: Stack(children: [
-                AnimatedBuilder(
-                  animation: _pulse,
-                  builder: (_, __) => Positioned(
-                    top: _pulse.value * 160 + 20,
-                    left: 0,
-                    right: 0,
-                    child: Container(
-                      height: 2,
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [
-                            kPrimary.withOpacity(0),
-                            kPrimary,
-                            kPrimary.withOpacity(0),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-                Positioned(top: 0, left: 0, child: _esquinaMarco()),
-                Positioned(top: 0, right: 0, child: _esquinaMarco(rotar: 90)),
-                Positioned(bottom: 0, left: 0, child: _esquinaMarco(rotar: 270)),
-                Positioned(
-                    bottom: 0, right: 0, child: _esquinaMarco(rotar: 180)),
-              ]),
-            ),
-          ),
-          Positioned(
-            bottom: 80,
-            left: 0,
-            right: 0,
-            child: Center(
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 20, vertical: 10),
-                decoration: BoxDecoration(
-                  color: Colors.black54,
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: const Text(
-                  'Apunta al código de barras o QR',
-                  style: TextStyle(color: Colors.white70, fontSize: 14),
-                ),
-              ),
-            ),
-          ),
-          if (_scanned)
-            Container(
-              color: Colors.black.withOpacity(0.6),
-              child: Center(
-                child: Container(
-                  padding: const EdgeInsets.all(28),
-                  decoration: BoxDecoration(
-                    color: kGreen,
-                    shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(
-                        color: kGreen.withOpacity(0.5),
-                        blurRadius: 30,
-                        spreadRadius: 8,
-                      ),
-                    ],
-                  ),
-                  child: const Icon(Icons.check_rounded,
-                      color: Colors.white, size: 56),
-                ),
-              ),
-            ),
-        ],
-      ),
-    );
-  }
-
-  Widget _esquinaMarco({double rotar = 0}) {
-    return Transform.rotate(
-      angle: rotar * 3.1416 / 180,
-      child: Container(
-        width: 32,
-        height: 32,
-        decoration: const BoxDecoration(
-          border: Border(
-            top: BorderSide(color: kPrimary, width: 3.5),
-            left: BorderSide(color: kPrimary, width: 3.5),
-          ),
-        ),
+      appBar: _buildAppBar('Escanear Código de Barras / QR'),
+      body: MobileScanner(
+        controller: cameraController,
+        onDetect: (capture) {
+          if (_encontrado) return;
+          final List<Barcode> barcodes = capture.barcodes;
+          for (final barcode in barcodes) {
+            if (barcode.rawValue != null) {
+              _encontrado = true;
+              widget.onCodigoEscaneado(barcode.rawValue!);
+              Navigator.pop(context);
+              break;
+            }
+          }
+        },
       ),
     );
   }
