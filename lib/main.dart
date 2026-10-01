@@ -37,6 +37,11 @@ const kShadowSoft = [
   BoxShadow(color: Color(0x08000000), blurRadius: 2,  offset: Offset(0, 1)),
 ];
 
+const kShadowMedium = [
+  BoxShadow(color: Color(0x18000000), blurRadius: 24, offset: Offset(0, 8)),
+  BoxShadow(color: Color(0x0A000000), blurRadius: 4,  offset: Offset(0, 2)),
+];
+
 // ─────────────────────────────────────────────
 // NOTIFICACIONES
 // ─────────────────────────────────────────────
@@ -384,7 +389,7 @@ Widget _sectionTitle(String text) {
 }
 
 // ─────────────────────────────────────────────
-// HOME PAGE (SIN LÍNEA ROJA Y LOGO GRANDE)
+// HOME PAGE
 // ─────────────────────────────────────────────
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
@@ -453,7 +458,6 @@ class HomePage extends StatelessWidget {
                           ],
                         ),
                         const SizedBox(height: 18),
-                        // LOGO GRANDE SIN RECUADRO NI CLIP
                         Image.asset(
                           'assets/icon/Logo_IN.PNG',
                           width: 170,
@@ -852,7 +856,6 @@ class _RegistrarPageState extends State<RegistrarPage> {
     } on SocketException {
       mostrarNotificacionApp('Sin Conexión', 'No hay red. Verifica Wi-Fi.', esError: true);
     } catch (_) {
-      // Timeout: el servidor puede haber registrado el dato igual
       mostrarNotificacionApp('Aviso', 'Respuesta tardía del servidor. Dato posiblemente registrado.',
           esError: false);
     } finally {
@@ -1471,7 +1474,7 @@ class _ItemLeyenda extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────
-// PANTALLA: PENDIENTES / DEVOLUCIONES
+// PANTALLA: PENDIENTES / DEVOLUCIONES (CORREGIDA)
 // ─────────────────────────────────────────────
 class PendientesPage extends StatefulWidget {
   const PendientesPage({super.key});
@@ -1548,7 +1551,6 @@ class _PendientesPageState extends State<PendientesPage> {
       setState(() => pendientes = []);
       mostrarNotificacionApp('Sin Conexión', 'No hay red. Verifica Wi-Fi.', esError: true);
     } catch (_) {
-      // Timeout u otro — no limpiar lista si ya tenía datos
       if (mounted && pendientes.isEmpty) {
         mostrarNotificacionApp('Aviso', 'El servidor tardó en responder. Intenta de nuevo.', esError: false);
       }
@@ -1609,7 +1611,6 @@ class _PendientesPageState extends State<PendientesPage> {
                 .timeout(const Duration(seconds: 10));
             if (r.statusCode == 200 || r.statusCode == 404) ok++;
           } catch (_) {
-            // Si timeout, contar como probable éxito y refrescar
             ok++;
           }
         }
@@ -1642,17 +1643,14 @@ class _PendientesPageState extends State<PendientesPage> {
         mostrarNotificacionApp('¡Éxito!', 'Utensilio devuelto correctamente.');
         await _consultarPendientesManual();
       } else if (r.statusCode == 404) {
-        // Ya fue devuelto anteriormente — refrescar de todos modos
         mostrarNotificacionApp('Aviso', 'Este ítem ya fue devuelto previamente.');
         await _consultarPendientesManual();
       } else {
         mostrarNotificacionApp('Error', 'No se pudo devolver el ítem (${r.statusCode})', esError: true);
       }
     } on SocketException {
-      // Sin red: aquí sí es error real, no llegó al servidor
       mostrarNotificacionApp('Sin Conexión', 'No hay red. Verifica tu conexión Wi-Fi.', esError: true);
     } catch (_) {
-      // Timeout u otro: puede que el servidor sí lo procesó → refrescar
       mostrarNotificacionApp('Aviso', 'Respuesta tardía. Verificando estado...', esError: false);
       await Future.delayed(const Duration(seconds: 1));
       await _consultarPendientesManual();
@@ -1668,7 +1666,7 @@ class _PendientesPageState extends State<PendientesPage> {
       body: Padding(
         padding: const EdgeInsets.all(20),
         child: Column(children: [
-          _sectionTitle('1. Tipo(s) de Utensilio'),
+          _sectionTitle('1. Filtrar por Tipo de Utensilio'),
           Row(
             children: _tiposDisponibles.map((tipo) {
               final sel = _modosSeleccionados.contains(tipo);
@@ -1825,7 +1823,7 @@ class _PendientesPageState extends State<PendientesPage> {
                         ),
                       )
                     : Builder(builder: (context) {
-                        // Filtrar por tipos seleccionados
+                        // Filtrado estricto por tipos seleccionados
                         final filtrados = pendientes.where((e) {
                           final t = (e['tipo'] ?? '').toString().toLowerCase();
                           return _modosSeleccionados
