@@ -733,7 +733,7 @@ class EntregaModuloPage extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────
-// MÓDULO 2: INVENTARIO (CON GESTIÓN COMPLETA)
+// MÓDULO 2: INVENTARIO
 // ─────────────────────────────────────────────
 class InventarioModuloPage extends StatefulWidget {
   const InventarioModuloPage({super.key});
@@ -743,8 +743,6 @@ class InventarioModuloPage extends StatefulWidget {
 }
 
 class _InventarioModuloPageState extends State<InventarioModuloPage> {
-  bool _cargando = false;
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -785,7 +783,7 @@ class _InventarioModuloPageState extends State<InventarioModuloPage> {
   }
 }
 
-// PANTALLA CRUD INVENTARIO (Basada en Guía 11 INFRAMEN)
+// PANTALLA CRUD INVENTARIO (CON EDICIÓN INTEGRADA)
 class InventarioCrudPage extends StatefulWidget {
   const InventarioCrudPage({super.key});
 
@@ -824,7 +822,7 @@ class _InventarioCrudPageState extends State<InventarioCrudPage> {
         });
       }
     } catch (_) {
-      // Manejo silencioso o notif
+      // Manejo silencioso o notificación de red
     } finally {
       if (mounted) setState(() => _cargando = false);
     }
@@ -847,6 +845,67 @@ class _InventarioCrudPageState extends State<InventarioCrudPage> {
     } catch (e) {
       mostrarNotificacionApp('Error', 'No se pudo agregar el utensilio', esError: true);
     }
+  }
+
+  // NUEVA FUNCIÓN PARA EDITAR UTENSILIO EXISTENTE
+  Future<void> editarUtensilio(int id, String tipoActual, int cantidadActual) async {
+    final editTipoController = TextEditingController(text: tipoActual);
+    final editCantidadController = TextEditingController(text: cantidadActual.toString());
+
+    await showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text('Editar Utensilio', style: TextStyle(fontWeight: FontWeight.w700)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: editTipoController,
+              decoration: const InputDecoration(labelText: 'Tipo de utensilio'),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: editCantidadController,
+              decoration: const InputDecoration(labelText: 'Cantidad'),
+              keyboardType: TextInputType.number,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancelar', style: TextStyle(color: kTextSub)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: kPrimary, foregroundColor: Colors.white),
+            onPressed: () async {
+              Navigator.pop(context);
+              try {
+                final url = Uri.parse('$kBaseUrl/utensilios/$id');
+                final response = await http.put(
+                  url,
+                  headers: {'Content-Type': 'application/json'},
+                  body: jsonEncode({
+                    'tipo': editTipoController.text.trim(),
+                    'cantidad': int.parse(editCantidadController.text.trim()),
+                  }),
+                );
+                if (response.statusCode == 200 || response.statusCode == 201) {
+                  mostrarNotificacionApp('Éxito', 'Utensilio actualizado correctamente');
+                  obtenerInventario();
+                } else {
+                  mostrarNotificacionApp('Error', 'No se pudo actualizar el registro', esError: true);
+                }
+              } catch (_) {
+                mostrarNotificacionApp('Error', 'Falla de conexión al actualizar', esError: true);
+              }
+            },
+            child: const Text('Guardar Cambios'),
+          ),
+        ],
+      ),
+    );
   }
 
   Future<void> eliminarUtensilio(int id) async {
@@ -880,7 +939,7 @@ class _InventarioCrudPageState extends State<InventarioCrudPage> {
                 children: [
                   TextField(
                     controller: tipoController,
-                    decoration: const InputDecoration(labelText: 'Tipo de utensilio'),
+                    decoration: const InputDecoration(labelText: 'Tipo de utensilio (Ej: Plato, Vaso)'),
                   ),
                   const SizedBox(height: 12),
                   TextField(
@@ -913,6 +972,10 @@ class _InventarioCrudPageState extends State<InventarioCrudPage> {
                           separatorBuilder: (_, __) => const SizedBox(height: 10),
                           itemBuilder: (context, index) {
                             final item = utensilios[index];
+                            final id = item['id'] ?? index + 1;
+                            final tipo = item['tipo'] ?? 'Utensilio';
+                            final cantidad = int.tryParse((item['entregados'] ?? item['cantidad'] ?? 0).toString()) ?? 0;
+
                             return Container(
                               decoration: BoxDecoration(
                                 color: kSurface,
@@ -922,11 +985,22 @@ class _InventarioCrudPageState extends State<InventarioCrudPage> {
                               ),
                               child: ListTile(
                                 leading: const Icon(Icons.kitchen, color: kPrimary),
-                                title: Text("Utensilio: ${item['tipo']}"),
-                                subtitle: Text("Cantidad: ${item['entregados'] ?? item['cantidad'] ?? 0}"),
-                                trailing: IconButton(
-                                  icon: const Icon(Icons.delete, color: Colors.red),
-                                  onPressed: () => eliminarUtensilio(item['id'] ?? 1),
+                                title: Text("Utensilio: $tipo", style: const TextStyle(fontWeight: FontWeight.w700)),
+                                subtitle: Text("Cantidad: $cantidad"),
+                                trailing: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    IconButton(
+                                      icon: const Icon(Icons.edit, color: kBlue),
+                                      onPressed: () => editarUtensilio(id, tipo, cantidad),
+                                      tooltip: 'Editar',
+                                    ),
+                                    IconButton(
+                                      icon: const Icon(Icons.delete, color: Colors.red),
+                                      onPressed: () => eliminarUtensilio(id),
+                                      tooltip: 'Eliminar',
+                                    ),
+                                  ],
                                 ),
                               ),
                             );
