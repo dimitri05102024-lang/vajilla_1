@@ -10,7 +10,7 @@ import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 import 'package:excel/excel.dart' as excel_pkg;
 import 'package:path_provider/path_provider.dart';
-import 'package0:open_file_plus/open_file_plus.dart';
+import 'package:open_file_plus/open_file_plus.dart';
 
 const String kBaseUrl = 'http://10.198.197.181:3000';
 
@@ -2545,7 +2545,7 @@ class _EscaneoPageState extends State<EscaneoPage>
           ),
           if (_scanned)
             Container(
-              color: Colors.black60,
+              color: Colors.black.withOpacity(0.6),
               child: Center(
                 child: Container(
                   padding: const EdgeInsets.all(28),
