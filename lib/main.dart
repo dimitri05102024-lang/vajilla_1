@@ -43,7 +43,7 @@ const kShadowMedium = [
 ];
 
 // ─────────────────────────────────────────────
-// NOTIFICACIONES (Sin modificar lógicas internas)
+// NOTIFICACIONES
 // ─────────────────────────────────────────────
 final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
     FlutterLocalNotificationsPlugin();
@@ -389,7 +389,7 @@ Widget _sectionTitle(String text) {
 }
 
 // ─────────────────────────────────────────────
-// HOME PAGE (REDISEÑO PROFESIONAL Y ELEGANTE)[cite: 16]
+// HOME PAGE (ACTUALIZADA SEGÚN BOCETO CON LOGO CENTRADO)[cite: 20]
 // ─────────────────────────────────────────────
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
@@ -401,7 +401,7 @@ class HomePage extends StatelessWidget {
       body: CustomScrollView(
         slivers: [
           SliverAppBar(
-            expandedHeight: 220.0,
+            expandedHeight: 290.0,
             floating: false,
             pinned: true,
             flexibleSpace: FlexibleSpaceBar(
@@ -412,12 +412,16 @@ class HomePage extends StatelessWidget {
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
+                  borderRadius: BorderRadius.only(
+                    bottomLeft: Radius.circular(30),
+                    bottomRight: Radius.circular(30),
+                  ),
                 ),
                 child: SafeArea(
                   child: Padding(
-                    padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
+                    padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
                     child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                      crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -453,53 +457,47 @@ class HomePage extends StatelessWidget {
                             ),
                           ],
                         ),
-                        const Spacer(),
-                        Row(
-                          children: [
-                            Container(
-                              width: 64,
-                              height: 64,
-                              padding: const EdgeInsets.all(8),
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: BorderRadius.circular(16),
-                                boxShadow: kShadowSoft,
-                              ),
-                              child: Image.asset(
-                                'assets/icon/Logo_IN.PNG',
-                                fit: BoxFit.contain,
-                                errorBuilder: (_, __, ___) => const Icon(
-                                    Icons.school_rounded,
-                                    size: 32,
-                                    color: kPrimary),
-                              ),
-                            ),
-                            const SizedBox(width: 16),
-                            const Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    'Control de Cafetín',
-                                    style: TextStyle(
-                                      fontSize: 20,
-                                      fontWeight: FontWeight.w800,
-                                      color: Colors.white,
-                                      letterSpacing: -0.5,
-                                    ),
-                                  ),
-                                  SizedBox(height: 2),
-                                  Text(
-                                    'Gestión de Vajilla y Préstamos',
-                                    style: TextStyle(
-                                      fontSize: 13,
-                                      color: Colors.white70,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
+                        const SizedBox(height: 12),
+                        // Título Superior
+                        const Text(
+                          'Control de Cafetería',
+                          style: TextStyle(
+                            fontSize: 22,
+                            fontWeight: FontWeight.w800,
+                            color: Colors.white,
+                            letterSpacing: -0.5,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 2),
+                        // Subtítulo del sistema
+                        const Text(
+                          'Sistema de Gestión de Vajilla y Préstamos',
+                          style: TextStyle(
+                            fontSize: 12.5,
+                            color: Colors.white70,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 18),
+                        // LOGO GRANDE AL CENTRO (Basado en boceto)[cite: 20]
+                        Container(
+                          width: 90,
+                          height: 90,
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(20),
+                            boxShadow: kShadowSoft,
+                          ),
+                          child: Image.asset(
+                            'assets/icon/Logo_IN.PNG',
+                            fit: BoxFit.contain,
+                            errorBuilder: (_, __, ___) => const Icon(
+                                Icons.school_rounded,
+                                size: 40,
+                                color: kPrimary),
+                          ),
                         ),
                       ],
                     ),
@@ -1133,7 +1131,7 @@ class _ToggleRow extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────
-// PANTALLA: ESTADÍSTICAS (DISEÑO MEJORADO Y LIMPIO)
+// PANTALLA: ESTADÍSTICAS
 // ─────────────────────────────────────────────
 class EstadisticasPage extends StatefulWidget {
   const EstadisticasPage({super.key});
@@ -1484,7 +1482,7 @@ class _ItemLeyenda extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────
-// PANTALLA: PENDIENTES / DEVOLUCIONES (CORREGIDA Y MOSTRANDO DATOS)[cite: 16]
+// PANTALLA: PENDIENTES / DEVOLUCIONES
 // ─────────────────────────────────────────────
 class PendientesPage extends StatefulWidget {
   const PendientesPage({super.key});
@@ -1548,7 +1546,6 @@ class _PendientesPageState extends State<PendientesPage> {
         final data = jsonDecode(response.body);
         final lista = data is List ? data : (data['pendientes'] ?? []);
         setState(() {
-          // Se muestran los pendientes activos correctamente mapeados
           pendientes = lista;
         });
       } else {
@@ -2076,7 +2073,7 @@ class _RegistrarEstudiantePageState
 }
 
 // ─────────────────────────────────────────────
-// PANTALLA: INFORMES HISTÓRICOS Y EXCEL/PDF (DISEÑO EXEL/REPORTES MEJORADO)[cite: 16]
+// PANTALLA: INFORMES HISTÓRICOS
 // ─────────────────────────────────────────────
 class InformesPage extends StatefulWidget {
   const InformesPage({super.key});
