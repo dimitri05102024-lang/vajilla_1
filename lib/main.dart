@@ -763,7 +763,7 @@ class _InventarioModuloPageState extends State<InventarioModuloPage> {
           _AccesoCard(
             icon: Icons.donut_large_rounded,
             titulo: 'Estadísticas del Día',
-            subtitulo: 'Gráficos y disponibilidad actual en tiempo real',
+            subtitulo: 'Gráficos de barras y circulares sincronizados en tiempo real',
             color: kBlue,
             onTap: () => Navigator.push(context,
                 MaterialPageRoute(builder: (_) => const EstadisticasPage())),
@@ -784,7 +784,7 @@ class _InventarioModuloPageState extends State<InventarioModuloPage> {
 }
 
 // ─────────────────────────────────────────────
-// PANTALLA: CRUD INVENTARIO (CORREGIDA Y VALIDADA)
+// PANTALLA: CRUD INVENTARIO
 // ─────────────────────────────────────────────
 class InventarioCrudPage extends StatefulWidget {
   const InventarioCrudPage({super.key});
@@ -812,7 +812,6 @@ class _InventarioCrudPageState extends State<InventarioCrudPage> {
     super.dispose();
   }
 
-  // CORRECCIÓN: Consultar directamente el endpoint /utensilios para listar todo el inventario
   Future<void> obtenerInventario() async {
     setState(() => _cargando = true);
     try {
@@ -831,18 +830,15 @@ class _InventarioCrudPageState extends State<InventarioCrudPage> {
     }
   }
 
-  // VALIDACIÓN Y ADICIÓN DE UTENSILIOS
   Future<void> agregarUtensilio() async {
     final tipoTexto = tipoController.text.trim();
     final cantidadTexto = cantidadController.text.trim();
 
-    // Validación de campos vacíos
     if (tipoTexto.isEmpty || cantidadTexto.isEmpty) {
       mostrarNotificacionApp('Aviso', 'Completa todos los campos obligatorios', esError: true);
       return;
     }
 
-    // Validación de cantidad numérica entera válida
     final cantidadNumero = int.tryParse(cantidadTexto);
     if (cantidadNumero == null || cantidadNumero < 0) {
       mostrarNotificacionApp('Aviso', 'Ingresa una cantidad entera válida (>= 0)', esError: true);
@@ -864,17 +860,16 @@ class _InventarioCrudPageState extends State<InventarioCrudPage> {
         tipoController.clear();
         cantidadController.clear();
         mostrarNotificacionApp('Éxito', 'Utensilio agregado correctamente');
-        await obtenerInventario(); // Refresca correctamente la lista completa
+        await obtenerInventario();
       } else {
         final errorData = jsonDecode(response.body);
         mostrarNotificacionApp('Error', errorData['mensaje'] ?? 'No se pudo agregar', esError: true);
       }
-    } catch (e) {
+    } catch (_) {
       mostrarNotificacionApp('Error', 'Falla de conexión con el servidor', esError: true);
     }
   }
 
-  // FUNCIÓN PARA EDITAR UTENSILIO EXISTENTE
   Future<void> editarUtensilio(int id, String tipoActual, int cantidadActual) async {
     final editTipoController = TextEditingController(text: tipoActual);
     final editCantidadController = TextEditingController(text: cantidadActual.toString());
@@ -935,7 +930,6 @@ class _InventarioCrudPageState extends State<InventarioCrudPage> {
     );
   }
 
-  // ELIMINAR UTENSILIO
   Future<void> eliminarUtensilio(int id) async {
     try {
       final url = Uri.parse('$kBaseUrl/utensilios/$id');
@@ -947,7 +941,7 @@ class _InventarioCrudPageState extends State<InventarioCrudPage> {
         final errorData = jsonDecode(response.body);
         mostrarNotificacionApp('Error', errorData['mensaje'] ?? 'No se pudo eliminar', esError: true);
       }
-    } catch (e) {
+    } catch (_) {
       mostrarNotificacionApp('Error', 'No se pudo eliminar', esError: true);
     }
   }
@@ -994,7 +988,7 @@ class _InventarioCrudPageState extends State<InventarioCrudPage> {
               ),
             ),
             const SizedBox(height: 20),
-            _sectionTitle('Lista Actual en Inventario (Plato, Vaso, Taza y Nuevos)'),
+            _sectionTitle('Lista Actual en Inventario'),
             Expanded(
               child: _cargando
                   ? const Center(child: CircularProgressIndicator(color: kPrimary))
@@ -1401,7 +1395,7 @@ class _ToggleRow extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────
-// PANTALLA: ESTADÍSTICAS
+// PANTALLA: ESTADÍSTICAS (ACTUALIZADA CON CLASE XII INFRAMEN)
 // ─────────────────────────────────────────────
 class EstadisticasPage extends StatefulWidget {
   const EstadisticasPage({super.key});
@@ -1454,7 +1448,31 @@ class _EstadisticasPageState extends State<EstadisticasPage> {
     }
   }
 
-  List<PieChartSectionData> _generarDatosPastel() {
+  // Generación de Gráfica de Barras (Basado en la Guía de Clase XII INFRAMEN)[cite: 24]
+  List<BarChartGroupData> _generarBarras() {
+    return _informe.asMap().entries.map((entry) {
+      final index = entry.key;
+      final item = entry.value;
+      final double entregados = double.tryParse(item['entregados'].toString()) ?? 0.0;
+      final tipo = item['tipo'] ?? 'Utensilio';
+      final color = _colorTipo[tipo] ?? Colors.blue;
+
+      return BarChartGroupData(
+        x: index,
+        barRods: [
+          BarChartRodData(
+            toY: entregados,
+            color: color,
+            width: 18,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(6)),
+          ),
+        ],
+      );
+    }).toList();
+  }
+
+  // Generación de Gráfica Circular (Basado en la Guía de Clase XII INFRAMEN)[cite: 24, 25]
+  List<PieChartSectionData> _generarCircular() {
     double total = _informe.fold(
         0, (s, e) => s + (double.tryParse(e['entregados'].toString()) ?? 0));
     return List.generate(_informe.length, (i) {
@@ -1463,7 +1481,11 @@ class _EstadisticasPageState extends State<EstadisticasPage> {
       final tipo = item['tipo'] ?? 'Utensilio';
       final val = double.tryParse(item['entregados'].toString()) ?? 0.0;
       final pct = total > 0 ? val / total * 100 : 0.0;
-      final color = _colorTipo[tipo] ?? const Color(0xFF10B981);
+      final color = item['tipo'] == 'Plato'
+          ? kBlue
+          : item['tipo'] == 'Vaso'
+              ? kAmber
+              : kPrimary;
 
       return PieChartSectionData(
         color: color,
@@ -1525,6 +1547,9 @@ class _EstadisticasPageState extends State<EstadisticasPage> {
               ),
             ),
 
+          // ─────────────────────────────────────────────
+          // GRÁFICA CIRCULAR (ESTADÍSTICAS)
+          // ─────────────────────────────────────────────
           Container(
             decoration: BoxDecoration(
               color: kSurface,
@@ -1534,7 +1559,7 @@ class _EstadisticasPageState extends State<EstadisticasPage> {
             ),
             padding: const EdgeInsets.all(22),
             child: Column(children: [
-              const Text('Distribución de Vajilla Entregada',
+              const Text('Distribución de Vajilla Entregada (Circular)',
                   style: TextStyle(
                       fontWeight: FontWeight.w700,
                       fontSize: 15,
@@ -1579,7 +1604,7 @@ class _EstadisticasPageState extends State<EstadisticasPage> {
                               borderData: FlBorderData(show: false),
                               sectionsSpace: 3,
                               centerSpaceRadius: 62,
-                              sections: _generarDatosPastel(),
+                              sections: _generarCircular(),
                             )),
                             Center(
                               child: Column(
@@ -1617,6 +1642,64 @@ class _EstadisticasPageState extends State<EstadisticasPage> {
                     _ItemLeyenda(color: kPrimary, texto: 'Tazas'),
                   ],
                 ),
+              ),
+            ]),
+          ),
+
+          const SizedBox(height: 24),
+
+          // ─────────────────────────────────────────────
+          // GRÁFICA DE BARRAS (CLASE XII - INFRAMEN)[cite: 23, 24]
+          // ─────────────────────────────────────────────
+          Container(
+            decoration: BoxDecoration(
+              color: kSurface,
+              borderRadius: BorderRadius.circular(22),
+              border: Border.all(color: kBorder),
+              boxShadow: kShadowSoft,
+            ),
+            padding: const EdgeInsets.all(22),
+            child: Column(children: [
+              const Text('Cantidades Disponibles / Entregadas (Barras)',
+                  style: TextStyle(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 15,
+                      color: kTextMain,
+                      letterSpacing: -0.2)),
+              const SizedBox(height: 22),
+              SizedBox(
+                height: 220,
+                child: _cargando
+                    ? const Center(child: CircularProgressIndicator(color: kPrimary))
+                    : _informe.isEmpty
+                        ? const Center(child: Text('Sin datos para gráfica de barras', style: TextStyle(color: kTextSub)))
+                        : BarChart(
+                            BarChartData(
+                              borderData: FlBorderData(show: false),
+                              titlesData: FlTitlesData(
+                                leftTitles: const AxisTitles(sideTitles: SideTitles(showTitles: true, reservedSize: 28)),
+                                topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                                rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                                bottomTitles: AxisTitles(
+                                  sideTitles: SideTitles(
+                                    showTitles: true,
+                                    getTitlesWidget: (double value, TitleMeta meta) {
+                                      int idx = value.toInt();
+                                      if (idx >= 0 && idx < _informe.length) {
+                                        String tipo = _informe[idx]['tipo'] ?? '';
+                                        return Padding(
+                                          padding: const EdgeInsets.only(top: 8.0),
+                                          child: Text(tipo, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                                        );
+                                      }
+                                      return const Text('');
+                                    },
+                                  ),
+                                ),
+                              ),
+                              barGroups: _generarBarras(),
+                            ),
+                          ),
               ),
             ]),
           ),
