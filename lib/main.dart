@@ -43,7 +43,7 @@ const kShadowMedium = [
 ];
 
 // ─────────────────────────────────────────────
-// NOTIFICACIONES
+// NOTIFICACIONES (Sin modificar lógicas internas)
 // ─────────────────────────────────────────────
 final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
     FlutterLocalNotificationsPlugin();
@@ -368,27 +368,6 @@ PreferredSizeWidget _buildAppBar(String title, {List<Widget>? actions}) {
   );
 }
 
-Widget _buildStatusChip(String label, Color color) {
-  return Container(
-    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-    decoration: BoxDecoration(
-      color: color.withOpacity(0.1),
-      borderRadius: BorderRadius.circular(20),
-    ),
-    child: Row(mainAxisSize: MainAxisSize.min, children: [
-      Container(
-        width: 6,
-        height: 6,
-        decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-      ),
-      const SizedBox(width: 6),
-      Text(label,
-          style: TextStyle(
-              color: color, fontSize: 11.5, fontWeight: FontWeight.w700)),
-    ]),
-  );
-}
-
 Widget _sectionTitle(String text) {
   return Padding(
     padding: const EdgeInsets.only(bottom: 12),
@@ -410,177 +389,153 @@ Widget _sectionTitle(String text) {
 }
 
 // ─────────────────────────────────────────────
-// HOME PAGE (PANTALLA PRINCIPAL MEJORADA CON IMÁGENES)
+// HOME PAGE (REDISEÑO PROFESIONAL Y ELEGANTE)[cite: 16]
 // ─────────────────────────────────────────────
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final size = MediaQuery.of(context).size;
     return Scaffold(
-      body: Column(
-        children: [
-          // Header Hero Institucional
-          Container(
-            width: double.infinity,
-            constraints: BoxConstraints(minHeight: size.height * 0.32),
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                colors: [kPrimaryDeep, kPrimary],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              borderRadius: BorderRadius.only(
-                bottomLeft: Radius.circular(32),
-                bottomRight: Radius.circular(32),
-              ),
-            ),
-            child: SafeArea(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
-                child: Column(
-                  children: [
-                    // Badge Estado Superior
-                    Align(
-                      alignment: Alignment.topRight,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 12, vertical: 5),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.12),
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(
-                              color: Colors.white.withOpacity(0.18), width: 1),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: const [
-                            Icon(Icons.circle, color: Color(0xFF4ADE80), size: 8),
-                            SizedBox(width: 6),
-                            Text('En línea',
-                                style: TextStyle(
-                                    color: Colors.white70,
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w600)),
+      backgroundColor: kBackground,
+      body: CustomScrollView(
+        slivers: [
+          SliverAppBar(
+            expandedHeight: 220.0,
+            floating: false,
+            pinned: true,
+            flexibleSpace: FlexibleSpaceBar(
+              background: Container(
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [kPrimaryDeep, kPrimary],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                ),
+                child: SafeArea(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 10, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withOpacity(0.15),
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              child: const Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(Icons.circle, color: Color(0xFF4ADE80), size: 8),
+                                  SizedBox(width: 6),
+                                  Text('Sistema Activo',
+                                      style: TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 11.5,
+                                          fontWeight: FontWeight.w600)),
+                                ],
+                              ),
+                            ),
+                            const Text(
+                              'INFRAMEN',
+                              style: TextStyle(
+                                color: Colors.white70,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: 1.5,
+                              ),
+                            ),
                           ],
                         ),
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    // Logo a la izquierda + Nombre Completo a la derecha
-                    Row(
-                      children: [
-                        Container(
-                          width: 80,
-                          height: 80,
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.15),
-                            borderRadius: BorderRadius.circular(20),
-                            border: Border.all(
-                                color: Colors.white.withOpacity(0.25), width: 1.5),
-                          ),
-                          child: Image.asset(
-                            'assets/icon/Logo_IN.PNG',
-                            fit: BoxFit.contain,
-                            errorBuilder: (_, __, ___) => const Icon(
-                                Icons.school_rounded,
-                                size: 40,
-                                color: Colors.white),
-                          ),
-                        ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text(
-                                'INSTITUTO NACIONAL',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w800,
-                                  color: Colors.white,
-                                  letterSpacing: 1.2,
-                                ),
+                        const Spacer(),
+                        Row(
+                          children: [
+                            Container(
+                              width: 64,
+                              height: 64,
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(16),
+                                boxShadow: kShadowSoft,
                               ),
-                              const Text(
-                                'GENERAL FRANCISCO MENENDEZ',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w600,
-                                  color: Colors.white70,
-                                  letterSpacing: 0.5,
-                                ),
+                              child: Image.asset(
+                                'assets/icon/Logo_IN.PNG',
+                                fit: BoxFit.contain,
+                                errorBuilder: (_, __, ___) => const Icon(
+                                    Icons.school_rounded,
+                                    size: 32,
+                                    color: kPrimary),
                               ),
-                              const SizedBox(height: 6),
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 8, vertical: 3),
-                                decoration: BoxDecoration(
-                                  color: Colors.white.withOpacity(0.2),
-                                  borderRadius: BorderRadius.circular(6),
-                                ),
-                                child: const Text(
-                                  'INFRAMEN - Control de Cafetín',
-                                  style: TextStyle(
-                                    fontSize: 11,
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.w500,
+                            ),
+                            const SizedBox(width: 16),
+                            const Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Control de Cafetín',
+                                    style: TextStyle(
+                                      fontSize: 20,
+                                      fontWeight: FontWeight.w800,
+                                      color: Colors.white,
+                                      letterSpacing: -0.5,
+                                    ),
                                   ),
-                                ),
+                                  SizedBox(height: 2),
+                                  Text(
+                                    'Gestión de Vajilla y Préstamos',
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      color: Colors.white70,
+                                    ),
+                                  ),
+                                ],
                               ),
-                            ],
-                          ),
+                            ),
+                          ],
                         ),
                       ],
                     ),
-                  ],
+                  ),
                 ),
               ),
             ),
           ),
-
-          // MÓDULOS CON IMÁGENES DENTRO DE TARJETAS
-          Expanded(
+          SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.all(20),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   _sectionTitle('Módulos Principales'),
-                  const SizedBox(height: 8),
-
-                  // MÓDULO 1: ENTREGA DE ALIMENTOS
-                  Expanded(
-                    child: _ModuloCardImage(
-                      imagePath: 'assets/icon/Utensilios.png',
-                      titulo: 'Entrega de Alimentos',
-                      subtitulo:
-                          'Retiros, préstamos y devoluciones de vajilla',
-                      gradientColors: const [Color(0xFFC0392B), Color(0xFF96281B)],
-                      onTap: () => Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                              builder: (_) => const EntregaModuloPage())),
-                    ),
+                  const SizedBox(height: 4),
+                  _ModuloCardImage(
+                    imagePath: 'assets/icon/Utensilios.png',
+                    titulo: 'Entrega de Alimentos',
+                    subtitulo: 'Retiros, préstamos y devoluciones de vajilla',
+                    gradientColors: const [Color(0xFFC0392B), Color(0xFF96281B)],
+                    onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (_) => const EntregaModuloPage())),
                   ),
-
                   const SizedBox(height: 16),
-
-                  // MÓDULO 2: INVENTARIO Y REPORTES
-                  Expanded(
-                    child: _ModuloCardImage(
-                      imagePath: 'assets/icon/inventario_IN.png',
-                      titulo: 'Inventario y Reportes',
-                      subtitulo:
-                          'Estadísticas del día, informes históricos y exportación',
-                      gradientColors: const [Color(0xFF1D4ED8), Color(0xFF1E40AF)],
-                      onTap: () => Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                              builder: (_) => const InventarioModuloPage())),
-                    ),
+                  _ModuloCardImage(
+                    imagePath: 'assets/icon/inventario_IN.png',
+                    titulo: 'Inventario y Reportes',
+                    subtitulo: 'Estadísticas del día, informes históricos y exportación',
+                    gradientColors: const [Color(0xFF1D4ED8), Color(0xFF1E40AF)],
+                    onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (_) => const InventarioModuloPage())),
                   ),
                 ],
               ),
@@ -613,36 +568,33 @@ class _ModuloCardImage extends StatelessWidget {
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(22),
+        borderRadius: BorderRadius.circular(20),
         child: Container(
           width: double.infinity,
-          padding: const EdgeInsets.all(18),
+          padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
             gradient: LinearGradient(
               colors: gradientColors,
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
-            borderRadius: BorderRadius.circular(22),
+            borderRadius: BorderRadius.circular(20),
             boxShadow: [
               BoxShadow(
-                color: gradientColors[0].withOpacity(0.35),
-                blurRadius: 18,
+                color: gradientColors[0].withOpacity(0.3),
+                blurRadius: 16,
                 offset: const Offset(0, 6),
               ),
             ],
           ),
           child: Row(children: [
-            // Imagen referente al módulo dentro de un contenedor decorativo
             Container(
-              width: 72,
-              height: 72,
-              padding: const EdgeInsets.all(8),
+              width: 60,
+              height: 60,
+              padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.18),
-                borderRadius: BorderRadius.circular(18),
-                border: Border.all(
-                    color: Colors.white.withOpacity(0.25), width: 1),
+                color: Colors.white.withOpacity(0.2),
+                borderRadius: BorderRadius.circular(16),
               ),
               child: Image.asset(
                 imagePath,
@@ -650,40 +602,31 @@ class _ModuloCardImage extends StatelessWidget {
                 errorBuilder: (_, __, ___) => const Icon(
                   Icons.restaurant_rounded,
                   color: Colors.white,
-                  size: 36,
+                  size: 28,
                 ),
               ),
             ),
             const SizedBox(width: 16),
             Expanded(
               child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(titulo,
                       style: const TextStyle(
                           fontWeight: FontWeight.w800,
-                          fontSize: 16.5,
-                          color: Colors.white,
-                          letterSpacing: -0.2)),
-                  const SizedBox(height: 5),
+                          fontSize: 16,
+                          color: Colors.white)),
+                  const SizedBox(height: 4),
                   Text(subtitulo,
                       style: TextStyle(
-                          fontSize: 12,
+                          fontSize: 12.5,
                           color: Colors.white.withOpacity(0.85),
                           height: 1.3)),
                 ],
               ),
             ),
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.18),
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(Icons.arrow_forward_rounded,
-                  color: Colors.white, size: 18),
-            ),
+            const Icon(Icons.arrow_forward_ios_rounded,
+                color: Colors.white, size: 16),
           ]),
         ),
       ),
@@ -1190,7 +1133,7 @@ class _ToggleRow extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────
-// PANTALLA: ESTADÍSTICAS
+// PANTALLA: ESTADÍSTICAS (DISEÑO MEJORADO Y LIMPIO)
 // ─────────────────────────────────────────────
 class EstadisticasPage extends StatefulWidget {
   const EstadisticasPage({super.key});
@@ -1541,7 +1484,7 @@ class _ItemLeyenda extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────
-// PANTALLA: PENDIENTES / DEVOLUCIONES (ACTUALIZADA)
+// PANTALLA: PENDIENTES / DEVOLUCIONES (CORREGIDA Y MOSTRANDO DATOS)[cite: 16]
 // ─────────────────────────────────────────────
 class PendientesPage extends StatefulWidget {
   const PendientesPage({super.key});
@@ -1604,16 +1547,13 @@ class _PendientesPageState extends State<PendientesPage> {
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         final lista = data is List ? data : (data['pendientes'] ?? []);
-        final hoy = DateTime.now().toString().split(' ')[0];
         setState(() {
-          pendientes = lista
-              .where((e) =>
-                  (e['fecha_retiro'] ?? '').toString().startsWith(hoy))
-              .toList();
+          // Se muestran los pendientes activos correctamente mapeados
+          pendientes = lista;
         });
       } else {
         setState(() => pendientes = []);
-        mostrarNotificacionApp('Aviso', 'Sin registros para este carnet',
+        mostrarNotificacionApp('Aviso', 'Sin registros o carnet no encontrado',
             esError: true);
       }
     } catch (_) {
@@ -1643,19 +1583,16 @@ class _PendientesPageState extends State<PendientesPage> {
       }
       final data = jsonDecode(response.body);
       final lista = data is List ? data : (data['pendientes'] ?? []);
-      final hoy = DateTime.now().toString().split(' ')[0];
-      final hoyList = lista
-          .where((e) =>
-              (e['fecha_retiro'] ?? '').toString().startsWith(hoy))
-          .toList();
-      if (hoyList.isEmpty) {
+      
+      if (lista.isEmpty) {
         mostrarNotificacionApp(
-            'Aviso', 'Sin préstamos pendientes del día de hoy',
+            'Aviso', 'Sin préstamos pendientes para este carnet',
             esError: true);
         setState(() => pendientes = []);
         return;
       }
-      final aDevolver = hoyList.where((e) {
+
+      final aDevolver = lista.where((e) {
         final t = (e['tipo'] ?? '').toString().toLowerCase();
         return _modosSeleccionados.any((m) => m.toLowerCase() == t);
       }).toList();
@@ -1664,7 +1601,7 @@ class _PendientesPageState extends State<PendientesPage> {
         mostrarNotificacionApp(
             'Aviso', 'Sin pendientes de los tipos seleccionados',
             esError: true);
-        setState(() => pendientes = hoyList);
+        setState(() => pendientes = lista);
         return;
       }
 
@@ -1681,7 +1618,6 @@ class _PendientesPageState extends State<PendientesPage> {
         mostrarNotificacionApp(
             '¡Devolución Exitosa!', 'Se devolvieron $ok utensilio(s).');
       }
-      // Actualizar vista para mostrar el resultado
       await _consultarPendientesManual();
     } catch (_) {
       mostrarNotificacionApp(
@@ -1712,11 +1648,11 @@ class _PendientesPageState extends State<PendientesPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: _buildAppBar('Devolución por Modo Activo'),
+      appBar: _buildAppBar('Pendientes y Devoluciones'),
       body: Padding(
         padding: const EdgeInsets.all(20),
         child: Column(children: [
-          _sectionTitle('1. Tipo(s) a devolver'),
+          _sectionTitle('1. Tipo(s) de Utensilio'),
           Row(
             children: _tiposDisponibles.map((tipo) {
               final sel = _modosSeleccionados.contains(tipo);
@@ -1850,7 +1786,7 @@ class _PendientesPageState extends State<PendientesPage> {
           ]),
 
           const SizedBox(height: 20),
-          _sectionTitle('Resultado de Consulta / Devoluciones'),
+          _sectionTitle('Lista de Pendientes (Debe)'),
 
           Expanded(
             child: _cargando
@@ -1865,7 +1801,7 @@ class _PendientesPageState extends State<PendientesPage> {
                                 size: 52, color: kBorder),
                             const SizedBox(height: 12),
                             const Text(
-                              'Ingresa o escanea un carnet para consultar o devolver',
+                              'Ingresa o escanea un carnet para ver qué debe',
                               textAlign: TextAlign.center,
                               style: TextStyle(color: kTextSub, fontSize: 14),
                             ),
@@ -1890,7 +1826,7 @@ class _PendientesPageState extends State<PendientesPage> {
                                 ),
                                 const SizedBox(height: 12),
                                 const Text(
-                                  'Sin pendientes registrados hoy para este carnet',
+                                  'Sin pendientes registrados para este carnet',
                                   style: TextStyle(
                                       color: kGreen,
                                       fontWeight: FontWeight.w600),
@@ -2140,7 +2076,7 @@ class _RegistrarEstudiantePageState
 }
 
 // ─────────────────────────────────────────────
-// PANTALLA: INFORMES HISTÓRICOS (DISEÑO HORIZONTAL DE CONTEO)
+// PANTALLA: INFORMES HISTÓRICOS Y EXCEL/PDF (DISEÑO EXEL/REPORTES MEJORADO)[cite: 16]
 // ─────────────────────────────────────────────
 class InformesPage extends StatefulWidget {
   const InformesPage({super.key});
