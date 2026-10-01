@@ -37,11 +37,6 @@ const kShadowSoft = [
   BoxShadow(color: Color(0x08000000), blurRadius: 2,  offset: Offset(0, 1)),
 ];
 
-const kShadowMedium = [
-  BoxShadow(color: Color(0x18000000), blurRadius: 24, offset: Offset(0, 8)),
-  BoxShadow(color: Color(0x0A000000), blurRadius: 4,  offset: Offset(0, 2)),
-];
-
 // ─────────────────────────────────────────────
 // NOTIFICACIONES
 // ─────────────────────────────────────────────
@@ -389,7 +384,7 @@ Widget _sectionTitle(String text) {
 }
 
 // ─────────────────────────────────────────────
-// HOME PAGE (ACTUALIZADA SEGÚN BOCETO CON LOGO CENTRADO)[cite: 20]
+// HOME PAGE (SIN LÍNEA ROJA Y LOGO GRANDE)
 // ─────────────────────────────────────────────
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
@@ -401,7 +396,7 @@ class HomePage extends StatelessWidget {
       body: CustomScrollView(
         slivers: [
           SliverAppBar(
-            expandedHeight: 290.0,
+            expandedHeight: 280.0,
             floating: false,
             pinned: true,
             flexibleSpace: FlexibleSpaceBar(
@@ -413,13 +408,13 @@ class HomePage extends StatelessWidget {
                     end: Alignment.bottomRight,
                   ),
                   borderRadius: BorderRadius.only(
-                    bottomLeft: Radius.circular(30),
-                    bottomRight: Radius.circular(30),
+                    bottomLeft: Radius.circular(35),
+                    bottomRight: Radius.circular(35),
                   ),
                 ),
                 child: SafeArea(
                   child: Padding(
-                    padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
+                    padding: const EdgeInsets.fromLTRB(20, 10, 20, 15),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
@@ -457,12 +452,39 @@ class HomePage extends StatelessWidget {
                             ),
                           ],
                         ),
-                        const SizedBox(height: 12),
-                        // Título Superior
+                        const SizedBox(height: 10),
+                        // LOGO AMPLIADO Y SIN FONDO BLANCO
+                        Container(
+                          width: 105,
+                          height: 105,
+                          padding: const EdgeInsets.all(4),
+                          decoration: BoxDecoration(
+                            color: Colors.transparent, // Sin fondo blanco
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.2),
+                                blurRadius: 15,
+                                offset: const Offset(0, 5),
+                              ),
+                            ],
+                          ),
+                          child: ClipOval(
+                            child: Image.asset(
+                              'assets/icon/Logo_IN.PNG',
+                              fit: BoxFit.cover,
+                              errorBuilder: (_, __, ___) => const Icon(
+                                  Icons.school_rounded,
+                                  size: 50,
+                                  color: Colors.white),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 10),
                         const Text(
                           'Control de Cafetería',
                           style: TextStyle(
-                            fontSize: 22,
+                            fontSize: 20,
                             fontWeight: FontWeight.w800,
                             color: Colors.white,
                             letterSpacing: -0.5,
@@ -470,34 +492,13 @@ class HomePage extends StatelessWidget {
                           textAlign: TextAlign.center,
                         ),
                         const SizedBox(height: 2),
-                        // Subtítulo del sistema
                         const Text(
                           'Sistema de Gestión de Vajilla y Préstamos',
                           style: TextStyle(
-                            fontSize: 12.5,
+                            fontSize: 12,
                             color: Colors.white70,
                           ),
                           textAlign: TextAlign.center,
-                        ),
-                        const SizedBox(height: 18),
-                        // LOGO GRANDE AL CENTRO (Basado en boceto)[cite: 20]
-                        Container(
-                          width: 90,
-                          height: 90,
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(20),
-                            boxShadow: kShadowSoft,
-                          ),
-                          child: Image.asset(
-                            'assets/icon/Logo_IN.PNG',
-                            fit: BoxFit.contain,
-                            errorBuilder: (_, __, ___) => const Icon(
-                                Icons.school_rounded,
-                                size: 40,
-                                color: kPrimary),
-                          ),
                         ),
                       ],
                     ),
@@ -1496,7 +1497,8 @@ class _PendientesPageState extends State<PendientesPage> {
   bool _cargando = false;
   bool _autoDevolucion = true;
 
-  final List<String> _modosSeleccionados = ['Plato'];
+  // CORREGIDO: Permite múltiples categorías seleccionadas correctamente
+  final List<String> _modosSeleccionados = ['Plato', 'Vaso', 'Taza'];
   static const _tiposDisponibles = ['Plato', 'Vaso', 'Taza'];
   static const _iconoTipo = {
     'Plato': Icons.dinner_dining,
@@ -1631,7 +1633,7 @@ class _PendientesPageState extends State<PendientesPage> {
       final r = await http.put(Uri.parse('$kBaseUrl/devolucion/$movimientoId'));
       if (r.statusCode == 200) {
         mostrarNotificacionApp('¡Éxito!', 'Utensilio devuelto correctamente.');
-        await _consultarPendientesManual();
+        await _consultarPendientesManual(); // Refresca automáticamente la pantalla
       } else {
         mostrarNotificacionApp('Error', 'No se pudo devolver el ítem', esError: true);
       }
