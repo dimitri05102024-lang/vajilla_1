@@ -733,10 +733,17 @@ class EntregaModuloPage extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────
-// MÓDULO 2: INVENTARIO
+// MÓDULO 2: INVENTARIO (CON GESTIÓN COMPLETA)
 // ─────────────────────────────────────────────
-class InventarioModuloPage extends StatelessWidget {
+class InventarioModuloPage extends StatefulWidget {
   const InventarioModuloPage({super.key});
+
+  @override
+  State<InventarioModuloPage> createState() => _InventarioModuloPageState();
+}
+
+class _InventarioModuloPageState extends State<InventarioModuloPage> {
+  bool _cargando = false;
 
   @override
   Widget build(BuildContext context) {
@@ -746,6 +753,15 @@ class InventarioModuloPage extends StatelessWidget {
         padding: const EdgeInsets.all(20),
         children: [
           const SizedBox(height: 4),
+          _AccesoCard(
+            icon: Icons.inventory_2_rounded,
+            titulo: 'Gestión de Inventario (CRUD)',
+            subtitulo: 'Agregar, editar y eliminar utensilios en tiempo real',
+            color: kPrimary,
+            onTap: () => Navigator.push(context,
+                MaterialPageRoute(builder: (_) => const InventarioCrudPage())),
+          ),
+          const SizedBox(height: 16),
           _AccesoCard(
             icon: Icons.donut_large_rounded,
             titulo: 'Estadísticas del Día',
@@ -764,6 +780,161 @@ class InventarioModuloPage extends StatelessWidget {
                 MaterialPageRoute(builder: (_) => const InformesPage())),
           ),
         ],
+      ),
+    );
+  }
+}
+
+// PANTALLA CRUD INVENTARIO (Basada en Guía 11 INFRAMEN)
+class InventarioCrudPage extends StatefulWidget {
+  const InventarioCrudPage({super.key});
+
+  @override
+  State<InventarioCrudPage> createState() => _InventarioCrudPageState();
+}
+
+class _InventarioCrudPageState extends State<InventarioCrudPage> {
+  List<dynamic> utensilios = [];
+  final tipoController = TextEditingController();
+  final cantidadController = TextEditingController();
+  bool _cargando = false;
+
+  @override
+  void initState() {
+    super.initState();
+    obtenerInventario();
+  }
+
+  @override
+  void dispose() {
+    tipoController.dispose();
+    cantidadController.dispose();
+    super.dispose();
+  }
+
+  Future<void> obtenerInventario() async {
+    setState(() => _cargando = true);
+    try {
+      final url = Uri.parse('$kBaseUrl/informe/${DateTime.now().toString().split(' ')[0]}');
+      final response = await http.get(url);
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        setState(() {
+          utensilios = data is List ? data : (data['informe'] ?? []);
+        });
+      }
+    } catch (_) {
+      // Manejo silencioso o notif
+    } finally {
+      if (mounted) setState(() => _cargando = false);
+    }
+  }
+
+  Future<void> agregarUtensilio() async {
+    if (tipoController.text.trim().isEmpty || cantidadController.text.trim().isEmpty) return;
+    try {
+      final url = Uri.parse('$kBaseUrl/utensilios');
+      await http.post(url,
+          headers: {'Content-Type': 'application/json'},
+          body: jsonEncode({
+            'tipo': tipoController.text.trim(),
+            'cantidad': int.parse(cantidadController.text.trim())
+          }));
+      tipoController.clear();
+      cantidadController.clear();
+      mostrarNotificacionApp('Éxito', 'Utensilio agregado correctamente');
+      obtenerInventario();
+    } catch (e) {
+      mostrarNotificacionApp('Error', 'No se pudo agregar el utensilio', esError: true);
+    }
+  }
+
+  Future<void> eliminarUtensilio(int id) async {
+    try {
+      final url = Uri.parse('$kBaseUrl/utensilios/$id');
+      await http.delete(url);
+      mostrarNotificacionApp('Aviso', 'Utensilio eliminado');
+      obtenerInventario();
+    } catch (e) {
+      mostrarNotificacionApp('Error', 'No se pudo eliminar', esError: true);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: _buildAppBar('Inventario - Gestión'),
+      body: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: kSurface,
+                borderRadius: BorderRadius.circular(18),
+                border: Border.all(color: kBorder),
+                boxShadow: kShadowSoft,
+              ),
+              child: Column(
+                children: [
+                  TextField(
+                    controller: tipoController,
+                    decoration: const InputDecoration(labelText: 'Tipo de utensilio'),
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: cantidadController,
+                    decoration: const InputDecoration(labelText: 'Cantidad'),
+                    keyboardType: TextInputType.number,
+                  ),
+                  const SizedBox(height: 16),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 48,
+                    child: ElevatedButton.icon(
+                      onPressed: agregarUtensilio,
+                      icon: const Icon(Icons.add_rounded),
+                      label: const Text('Agregar Utensilio'),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 20),
+            _sectionTitle('Lista Actual en Inventario'),
+            Expanded(
+              child: _cargando
+                  ? const Center(child: CircularProgressIndicator(color: kPrimary))
+                  : utensilios.isEmpty
+                      ? const Center(child: Text('Sin utensilios registrados', style: TextStyle(color: kTextSub)))
+                      : ListView.separated(
+                          itemCount: utensilios.length,
+                          separatorBuilder: (_, __) => const SizedBox(height: 10),
+                          itemBuilder: (context, index) {
+                            final item = utensilios[index];
+                            return Container(
+                              decoration: BoxDecoration(
+                                color: kSurface,
+                                borderRadius: BorderRadius.circular(16),
+                                border: Border.all(color: kBorder),
+                                boxShadow: kShadowSoft,
+                              ),
+                              child: ListTile(
+                                leading: const Icon(Icons.kitchen, color: kPrimary),
+                                title: Text("Utensilio: ${item['tipo']}"),
+                                subtitle: Text("Cantidad: ${item['entregados'] ?? item['cantidad'] ?? 0}"),
+                                trailing: IconButton(
+                                  icon: const Icon(Icons.delete, color: Colors.red),
+                                  onPressed: () => eliminarUtensilio(item['id'] ?? 1),
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -1474,7 +1645,7 @@ class _ItemLeyenda extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────
-// PANTALLA: PENDIENTES / DEVOLUCIONES (CORREGIDA)
+// PANTALLA: PENDIENTES / DEVOLUCIONES
 // ─────────────────────────────────────────────
 class PendientesPage extends StatefulWidget {
   const PendientesPage({super.key});
@@ -1488,7 +1659,6 @@ class _PendientesPageState extends State<PendientesPage> {
   bool _cargando = false;
   bool _autoDevolucion = true;
 
-  // CORREGIDO: Permite múltiples categorías seleccionadas correctamente
   final List<String> _modosSeleccionados = ['Plato', 'Vaso', 'Taza'];
   static const _tiposDisponibles = ['Plato', 'Vaso', 'Taza'];
   static const _iconoTipo = {
@@ -1823,7 +1993,6 @@ class _PendientesPageState extends State<PendientesPage> {
                         ),
                       )
                     : Builder(builder: (context) {
-                        // Filtrado estricto por tipos seleccionados
                         final filtrados = pendientes.where((e) {
                           final t = (e['tipo'] ?? '').toString().toLowerCase();
                           return _modosSeleccionados
