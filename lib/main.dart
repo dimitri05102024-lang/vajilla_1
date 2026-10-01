@@ -396,7 +396,7 @@ class HomePage extends StatelessWidget {
       body: CustomScrollView(
         slivers: [
           SliverAppBar(
-            expandedHeight: 280.0,
+            expandedHeight: 360.0,
             floating: false,
             pinned: true,
             flexibleSpace: FlexibleSpaceBar(
@@ -414,7 +414,7 @@ class HomePage extends StatelessWidget {
                 ),
                 child: SafeArea(
                   child: Padding(
-                    padding: const EdgeInsets.fromLTRB(20, 10, 20, 15),
+                    padding: const EdgeInsets.fromLTRB(20, 10, 20, 24),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
@@ -452,46 +452,30 @@ class HomePage extends StatelessWidget {
                             ),
                           ],
                         ),
-                        const SizedBox(height: 10),
-                        // LOGO AMPLIADO Y SIN FONDO BLANCO
-                        Container(
-                          width: 105,
-                          height: 105,
-                          padding: const EdgeInsets.all(4),
-                          decoration: BoxDecoration(
-                            color: Colors.transparent, // Sin fondo blanco
-                            shape: BoxShape.circle,
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.2),
-                                blurRadius: 15,
-                                offset: const Offset(0, 5),
-                              ),
-                            ],
-                          ),
-                          child: ClipOval(
-                            child: Image.asset(
-                              'assets/icon/Logo_IN.PNG',
-                              fit: BoxFit.cover,
-                              errorBuilder: (_, __, ___) => const Icon(
-                                  Icons.school_rounded,
-                                  size: 50,
-                                  color: Colors.white),
-                            ),
-                          ),
+                        const SizedBox(height: 18),
+                        // LOGO GRANDE SIN RECUADRO NI CLIP
+                        Image.asset(
+                          'assets/icon/Logo_IN.PNG',
+                          width: 170,
+                          height: 170,
+                          fit: BoxFit.contain,
+                          errorBuilder: (_, __, ___) => const Icon(
+                              Icons.school_rounded,
+                              size: 100,
+                              color: Colors.white),
                         ),
-                        const SizedBox(height: 10),
+                        const SizedBox(height: 14),
                         const Text(
                           'Control de Cafetería',
                           style: TextStyle(
-                            fontSize: 20,
+                            fontSize: 22,
                             fontWeight: FontWeight.w800,
                             color: Colors.white,
                             letterSpacing: -0.5,
                           ),
                           textAlign: TextAlign.center,
                         ),
-                        const SizedBox(height: 2),
+                        const SizedBox(height: 3),
                         const Text(
                           'Sistema de Gestión de Vajilla y Préstamos',
                           style: TextStyle(
@@ -509,12 +493,12 @@ class HomePage extends StatelessWidget {
           ),
           SliverToBoxAdapter(
             child: Padding(
-              padding: const EdgeInsets.all(20),
+              padding: const EdgeInsets.fromLTRB(20, 28, 20, 20),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   _sectionTitle('Módulos Principales'),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 12),
                   _ModuloCardImage(
                     imagePath: 'assets/icon/Utensilios.png',
                     titulo: 'Entrega de Alimentos',
@@ -837,8 +821,9 @@ class _RegistrarPageState extends State<RegistrarPage> {
     if (codigo.trim().isEmpty) return;
     setState(() => _cargando = true);
     try {
-      final estResp =
-          await http.get(Uri.parse('$kBaseUrl/estudiante/$codigo'));
+      final estResp = await http
+          .get(Uri.parse('$kBaseUrl/estudiante/$codigo'))
+          .timeout(const Duration(seconds: 10));
       if (estResp.statusCode == 404) {
         if (!mounted) return;
         _mostrarDialogoEstudianteNoEncontrado(codigo);
@@ -846,7 +831,7 @@ class _RegistrarPageState extends State<RegistrarPage> {
       }
       if (estResp.statusCode != 200) {
         mostrarNotificacionApp('Error de Servidor',
-            'No se pudo conectar con el servidor',
+            'Respuesta inesperada (${estResp.statusCode})',
             esError: true);
         return;
       }
@@ -855,18 +840,21 @@ class _RegistrarPageState extends State<RegistrarPage> {
         Uri.parse('$kBaseUrl/retiro'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({'estudiante_id': estudianteId, 'tipo': _tipo}),
-      );
+      ).timeout(const Duration(seconds: 10));
       if (retResp.statusCode == 200 || retResp.statusCode == 201) {
         mostrarNotificacionApp('¡Préstamo Exitoso!',
             'Retiro de $_tipo para carnet $codigo');
         _carnetCtrl.clear();
       } else {
-        mostrarNotificacionApp('Error', 'Error al registrar el retiro',
+        mostrarNotificacionApp('Error', 'Error al registrar el retiro (${retResp.statusCode})',
             esError: true);
       }
+    } on SocketException {
+      mostrarNotificacionApp('Sin Conexión', 'No hay red. Verifica Wi-Fi.', esError: true);
     } catch (_) {
-      mostrarNotificacionApp('Error de Red', 'No se pudo conectar al servidor',
-          esError: true);
+      // Timeout: el servidor puede haber registrado el dato igual
+      mostrarNotificacionApp('Aviso', 'Respuesta tardía del servidor. Dato posiblemente registrado.',
+          esError: false);
     } finally {
       if (mounted) setState(() => _cargando = false);
     }
@@ -1542,8 +1530,9 @@ class _PendientesPageState extends State<PendientesPage> {
     if (carnet.isEmpty) return;
     setState(() => _cargando = true);
     try {
-      final response =
-          await http.get(Uri.parse('$kBaseUrl/pendientes/$carnet'));
+      final response = await http
+          .get(Uri.parse('$kBaseUrl/pendientes/$carnet'))
+          .timeout(const Duration(seconds: 10));
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         final lista = data is List ? data : (data['pendientes'] ?? []);
@@ -1552,12 +1541,17 @@ class _PendientesPageState extends State<PendientesPage> {
         });
       } else {
         setState(() => pendientes = []);
-        mostrarNotificacionApp('Aviso', 'Sin registros o carnet no encontrado',
-            esError: true);
+        mostrarNotificacionApp('Aviso', 'Sin registros para este carnet',
+            esError: false);
       }
-    } catch (_) {
+    } on SocketException {
       setState(() => pendientes = []);
-      mostrarNotificacionApp('Error', 'Error de conexión', esError: true);
+      mostrarNotificacionApp('Sin Conexión', 'No hay red. Verifica Wi-Fi.', esError: true);
+    } catch (_) {
+      // Timeout u otro — no limpiar lista si ya tenía datos
+      if (mounted && pendientes.isEmpty) {
+        mostrarNotificacionApp('Aviso', 'El servidor tardó en responder. Intenta de nuevo.', esError: false);
+      }
     } finally {
       if (mounted) setState(() => _cargando = false);
     }
@@ -1573,8 +1567,9 @@ class _PendientesPageState extends State<PendientesPage> {
     }
     setState(() => _cargando = true);
     try {
-      final response =
-          await http.get(Uri.parse('$kBaseUrl/pendientes/$carnet'));
+      final response = await http
+          .get(Uri.parse('$kBaseUrl/pendientes/$carnet'))
+          .timeout(const Duration(seconds: 10));
       if (response.statusCode != 200) {
         mostrarNotificacionApp('Error', 'Estudiante no encontrado',
             esError: true);
@@ -1608,20 +1603,30 @@ class _PendientesPageState extends State<PendientesPage> {
       for (final item in aDevolver) {
         final id = item['id'];
         if (id != null) {
-          final r =
-              await http.put(Uri.parse('$kBaseUrl/devolucion/$id'));
-          if (r.statusCode == 200) ok++;
+          try {
+            final r = await http
+                .put(Uri.parse('$kBaseUrl/devolucion/$id'))
+                .timeout(const Duration(seconds: 10));
+            if (r.statusCode == 200 || r.statusCode == 404) ok++;
+          } catch (_) {
+            // Si timeout, contar como probable éxito y refrescar
+            ok++;
+          }
         }
       }
       if (ok > 0) {
         mostrarNotificacionApp(
-            '¡Devolución Exitosa!', 'Se devolvieron $ok utensilio(s).');
+            '¡Devolución Exitosa!', 'Se procesaron $ok utensilio(s).');
       }
       await _consultarPendientesManual();
+    } on SocketException {
+      mostrarNotificacionApp('Sin Conexión', 'No hay red. Verifica Wi-Fi.', esError: true);
     } catch (_) {
       mostrarNotificacionApp(
-          'Error', 'Error al procesar la devolución',
-          esError: true);
+          'Aviso', 'Respuesta tardía. Verificando estado...',
+          esError: false);
+      await Future.delayed(const Duration(seconds: 1));
+      await _consultarPendientesManual();
     } finally {
       if (mounted) setState(() => _cargando = false);
     }
@@ -1630,15 +1635,27 @@ class _PendientesPageState extends State<PendientesPage> {
   Future<void> _devolverItemIndividual(int movimientoId) async {
     setState(() => _cargando = true);
     try {
-      final r = await http.put(Uri.parse('$kBaseUrl/devolucion/$movimientoId'));
+      final r = await http
+          .put(Uri.parse('$kBaseUrl/devolucion/$movimientoId'))
+          .timeout(const Duration(seconds: 10));
       if (r.statusCode == 200) {
         mostrarNotificacionApp('¡Éxito!', 'Utensilio devuelto correctamente.');
-        await _consultarPendientesManual(); // Refresca automáticamente la pantalla
+        await _consultarPendientesManual();
+      } else if (r.statusCode == 404) {
+        // Ya fue devuelto anteriormente — refrescar de todos modos
+        mostrarNotificacionApp('Aviso', 'Este ítem ya fue devuelto previamente.');
+        await _consultarPendientesManual();
       } else {
-        mostrarNotificacionApp('Error', 'No se pudo devolver el ítem', esError: true);
+        mostrarNotificacionApp('Error', 'No se pudo devolver el ítem (${r.statusCode})', esError: true);
       }
+    } on SocketException {
+      // Sin red: aquí sí es error real, no llegó al servidor
+      mostrarNotificacionApp('Sin Conexión', 'No hay red. Verifica tu conexión Wi-Fi.', esError: true);
     } catch (_) {
-      mostrarNotificacionApp('Error', 'Error de comunicación', esError: true);
+      // Timeout u otro: puede que el servidor sí lo procesó → refrescar
+      mostrarNotificacionApp('Aviso', 'Respuesta tardía. Verificando estado...', esError: false);
+      await Future.delayed(const Duration(seconds: 1));
+      await _consultarPendientesManual();
     } finally {
       if (mounted) setState(() => _cargando = false);
     }
@@ -1807,8 +1824,16 @@ class _PendientesPageState extends State<PendientesPage> {
                           ],
                         ),
                       )
-                    : pendientes.isEmpty
-                        ? Center(
+                    : Builder(builder: (context) {
+                        // Filtrar por tipos seleccionados
+                        final filtrados = pendientes.where((e) {
+                          final t = (e['tipo'] ?? '').toString().toLowerCase();
+                          return _modosSeleccionados
+                              .any((m) => m.toLowerCase() == t);
+                        }).toList();
+
+                        if (filtrados.isEmpty) {
+                          return Center(
                             child: Column(
                               mainAxisSize: MainAxisSize.min,
                               children: [
@@ -1825,20 +1850,23 @@ class _PendientesPageState extends State<PendientesPage> {
                                 ),
                                 const SizedBox(height: 12),
                                 const Text(
-                                  'Sin pendientes registrados para este carnet',
+                                  'Sin pendientes para el tipo seleccionado',
                                   style: TextStyle(
                                       color: kGreen,
                                       fontWeight: FontWeight.w600),
+                                  textAlign: TextAlign.center,
                                 ),
                               ],
                             ),
-                          )
-                        : ListView.separated(
-                            itemCount: pendientes.length,
+                          );
+                        }
+
+                        return ListView.separated(
+                            itemCount: filtrados.length,
                             separatorBuilder: (_, __) =>
                                 const SizedBox(height: 10),
                             itemBuilder: (_, i) {
-                              final item = pendientes[i];
+                              final item = filtrados[i];
                               final idMov = item['id'];
                               final tipo = item['tipo'] ?? 'Utensilio';
                               final fecha = item['fecha_retiro'] ?? '';
@@ -1899,7 +1927,8 @@ class _PendientesPageState extends State<PendientesPage> {
                                 ),
                               );
                             },
-                          ),
+                          );
+                      }),
           ),
         ]),
       ),
