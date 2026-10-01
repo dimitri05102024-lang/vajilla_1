@@ -10,12 +10,12 @@ import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 import 'package:excel/excel.dart' as excel_pkg;
 import 'package:path_provider/path_provider.dart';
-import 'package:open_file_plus/open_file_plus.dart';
+import 'package0:open_file_plus/open_file_plus.dart';
 
 const String kBaseUrl = 'http://10.198.197.181:3000';
 
 // ─────────────────────────────────────────────
-// PALETA DE DISEÑO PREMIUM
+// PALETA DE DISEÑO PREMIUM Y MODERNA
 // ─────────────────────────────────────────────
 const kPrimary     = Color(0xFFC0392B); // rojo INFRAMEN
 const kPrimaryDark = Color(0xFF96281B);
@@ -49,24 +49,55 @@ final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
     FlutterLocalNotificationsPlugin();
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
-Future<void> main() async {
-  WidgetsFlutterBinding.ensureInitialized();
+Future<void> inicializarNotificacionesNativas() async {
   const AndroidInitializationSettings initAndroid =
       AndroidInitializationSettings('@mipmap/ic_launcher');
-  await flutterLocalNotificationsPlugin.initialize(
-    const InitializationSettings(android: initAndroid),
+
+  const InitializationSettings initSettings =
+      InitializationSettings(android: initAndroid);
+
+  await flutterLocalNotificationsPlugin.initialize(initSettings);
+
+  final androidPlugin = flutterLocalNotificationsPlugin
+      .resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin>();
+  if (androidPlugin != null) {
+    await androidPlugin.requestNotificationsPermission();
+  }
+}
+
+Future<void> mostrarNotificacionLocal(String titulo, String cuerpo,
+    {bool esError = false}) async {
+  final AndroidNotificationDetails android = AndroidNotificationDetails(
+    'canal_cafetin_inframen_high',
+    'Notificaciones Cafetín',
+    channelDescription: 'Avisos en tiempo real sobre retiros y devoluciones',
+    importance: Importance.max,
+    priority: Priority.high,
+    showWhen: true,
+    playSound: true,
+    enableVibration: true,
+    color: esError ? const Color(0xFFDC2626) : kPrimary,
+    styleInformation: BigTextStyleInformation(cuerpo),
   );
-  runApp(const CocinaEscolarApp());
+
+  await flutterLocalNotificationsPlugin.show(
+    DateTime.now().millisecondsSinceEpoch.remainder(100000),
+    titulo,
+    cuerpo,
+    NotificationDetails(android: android),
+  );
 }
 
 OverlayEntry? _notifActiva;
 
 void mostrarNotificacionApp(String titulo, String cuerpo,
     {bool esError = false}) {
+  mostrarNotificacionLocal(titulo, cuerpo, esError: esError);
+
   final context = navigatorKey.currentContext;
   if (context == null) return;
 
-  // Elimina la notificación anterior si sigue visible
   _notifActiva?.remove();
   _notifActiva = null;
 
@@ -133,8 +164,6 @@ class _TopNotificationState extends State<_TopNotification>
     _fade = CurvedAnimation(parent: _ctrl, curve: Curves.easeOut);
 
     _ctrl.forward();
-
-    // Auto-dismiss tras 4 segundos
     Future.delayed(const Duration(seconds: 4), _dismiss);
   }
 
@@ -228,26 +257,15 @@ class _TopNotificationState extends State<_TopNotification>
   }
 }
 
-Future<void> mostrarNotificacionLocal(String titulo, String cuerpo) async {
-  const AndroidNotificationDetails android = AndroidNotificationDetails(
-    'canal_cafetin_inframen',
-    'Notificaciones Cafetín',
-    channelDescription: 'Avisos en tiempo real sobre retiros y devoluciones',
-    importance: Importance.max,
-    priority: Priority.high,
-    showWhen: true,
-  );
-  await flutterLocalNotificationsPlugin.show(
-    DateTime.now().millisecond,
-    titulo,
-    cuerpo,
-    const NotificationDetails(android: android),
-  );
-}
-
 // ─────────────────────────────────────────────
 // APP ROOT
 // ─────────────────────────────────────────────
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await inicializarNotificacionesNativas();
+  runApp(const CocinaEscolarApp());
+}
+
 class CocinaEscolarApp extends StatelessWidget {
   const CocinaEscolarApp({super.key});
 
@@ -335,8 +353,6 @@ class CocinaEscolarApp extends StatelessWidget {
 // ─────────────────────────────────────────────
 // COMPONENTES COMPARTIDOS
 // ─────────────────────────────────────────────
-
-/// AppBar personalizado con gradiente superior sutil
 PreferredSizeWidget _buildAppBar(String title, {List<Widget>? actions}) {
   return AppBar(
     title: Text(title),
@@ -353,7 +369,6 @@ PreferredSizeWidget _buildAppBar(String title, {List<Widget>? actions}) {
   );
 }
 
-/// Chip de estado con punto de color
 Widget _buildStatusChip(String label, Color color) {
   return Container(
     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
@@ -375,12 +390,13 @@ Widget _buildStatusChip(String label, Color color) {
   );
 }
 
-/// Sección con título y línea decorativa
 Widget _sectionTitle(String text) {
   return Padding(
     padding: const EdgeInsets.only(bottom: 12),
     child: Row(children: [
-      Container(width: 3, height: 18, color: kPrimary,
+      Container(
+          width: 3,
+          height: 18,
           decoration: BoxDecoration(
               color: kPrimary, borderRadius: BorderRadius.circular(2))),
       const SizedBox(width: 10),
@@ -395,7 +411,7 @@ Widget _sectionTitle(String text) {
 }
 
 // ─────────────────────────────────────────────
-// HOME PAGE
+// HOME PAGE (PANTALLA DIVIDIDA EN 2 MÓDULOS)
 // ─────────────────────────────────────────────
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
@@ -417,10 +433,10 @@ class HomePage extends StatelessWidget {
     return Scaffold(
       body: Column(
         children: [
-          // ── Hero Header ──────────────────────────
+          // Header Hero
           Container(
             width: double.infinity,
-            constraints: BoxConstraints(minHeight: size.height * 0.38),
+            constraints: BoxConstraints(minHeight: size.height * 0.30),
             decoration: const BoxDecoration(
               gradient: LinearGradient(
                 colors: [kPrimaryDeep, kPrimary],
@@ -428,33 +444,32 @@ class HomePage extends StatelessWidget {
                 end: Alignment.bottomRight,
               ),
               borderRadius: BorderRadius.only(
-                bottomLeft: Radius.circular(36),
-                bottomRight: Radius.circular(36),
+                bottomLeft: Radius.circular(32),
+                bottomRight: Radius.circular(32),
               ),
             ),
             child: SafeArea(
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(28, 24, 28, 36),
+                padding: const EdgeInsets.fromLTRB(24, 20, 24, 24),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Logo + badge
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Container(
-                          padding: const EdgeInsets.all(14),
+                          padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
                             color: Colors.white.withOpacity(0.12),
-                            borderRadius: BorderRadius.circular(18),
+                            borderRadius: BorderRadius.circular(16),
                             border: Border.all(
                                 color: Colors.white.withOpacity(0.2), width: 1),
                           ),
-                          child: _buildAppLogo(size: 40),
+                          child: _buildAppLogo(size: 36),
                         ),
                         Container(
                           padding: const EdgeInsets.symmetric(
-                              horizontal: 14, vertical: 8),
+                              horizontal: 12, vertical: 6),
                           decoration: BoxDecoration(
                             color: Colors.white.withOpacity(0.12),
                             borderRadius: BorderRadius.circular(20),
@@ -474,24 +489,23 @@ class HomePage extends StatelessWidget {
                         ),
                       ],
                     ),
-                    const SizedBox(height: 28),
+                    const SizedBox(height: 18),
                     const Text(
                       'INFRAMEN',
                       style: TextStyle(
-                        fontSize: 30,
+                        fontSize: 26,
                         fontWeight: FontWeight.w800,
                         color: Colors.white,
-                        letterSpacing: 3,
+                        letterSpacing: 2,
                         height: 1,
                       ),
                     ),
-                    const SizedBox(height: 6),
+                    const SizedBox(height: 4),
                     Text(
-                      'Sistema de Gestión\nde Cafetín Escolar',
+                      'Sistema de Gestión de Cafetín Escolar',
                       style: TextStyle(
-                        fontSize: 15,
-                        color: Colors.white.withOpacity(0.72),
-                        height: 1.5,
+                        fontSize: 13.5,
+                        color: Colors.white.withOpacity(0.75),
                         fontWeight: FontWeight.w400,
                       ),
                     ),
@@ -501,84 +515,47 @@ class HomePage extends StatelessWidget {
             ),
           ),
 
-          // ── Módulos ───────────────────────────────
+          // PANTALLA DIVIDIDA EN DOS MÓDULOS PRINCIPALES
           Expanded(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(20, 28, 20, 28),
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(20, 20, 20, 20),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _sectionTitle('Módulos del sistema'),
-                  const SizedBox(height: 4),
-                  _ModuloCard(
-                    icon: Icons.restaurant_rounded,
-                    titulo: 'Entrega de Alimentos',
-                    subtitulo:
-                        'Registro de retiros, devoluciones y utensilios prestados',
-                    gradientColors: const [Color(0xFFC0392B), Color(0xFF96281B)],
-                    onTap: () => Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                            builder: (_) => const EntregaModuloPage())),
-                  ),
-                  const SizedBox(height: 16),
-                  _ModuloCard(
-                    icon: Icons.inventory_2_rounded,
-                    titulo: 'Inventario y Reportes',
-                    subtitulo:
-                        'Estadísticas del día, informes históricos y exportación',
-                    gradientColors: const [Color(0xFF1D4ED8), Color(0xFF1E40AF)],
-                    onTap: () => Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                            builder: (_) => const InventarioModuloPage())),
-                  ),
-                  const SizedBox(height: 32),
+                  _sectionTitle('Módulos Principales'),
+                  const SizedBox(height: 8),
 
-                  // ── Accesos rápidos ──────────────────
-                  _sectionTitle('Accesos rápidos'),
-                  const SizedBox(height: 4),
-                  Row(children: [
-                    _QuickAction(
-                      icon: Icons.qr_code_scanner_rounded,
-                      label: 'Escanear',
-                      color: kPrimary,
+                  // MÓDULO 1: ENTREGA DE ALIMENTOS
+                  Expanded(
+                    child: _ModuloCard(
+                      icon: Icons.restaurant_rounded,
+                      titulo: 'Entrega de Alimentos',
+                      subtitulo:
+                          'Registro de retiros, devoluciones y utensilios prestados',
+                      gradientColors: const [Color(0xFFC0392B), Color(0xFF96281B)],
                       onTap: () => Navigator.push(
                           context,
                           MaterialPageRoute(
-                              builder: (_) => const RegistrarPage())),
+                              builder: (_) => const EntregaModuloPage())),
                     ),
-                    const SizedBox(width: 12),
-                    _QuickAction(
-                      icon: Icons.donut_large_rounded,
-                      label: 'Hoy',
-                      color: kBlue,
+                  ),
+
+                  const SizedBox(height: 16),
+
+                  // MÓDULO 2: INVENTARIO Y REPORTES
+                  Expanded(
+                    child: _ModuloCard(
+                      icon: Icons.inventory_2_rounded,
+                      titulo: 'Inventario y Reportes',
+                      subtitulo:
+                          'Estadísticas del día, informes históricos y exportación',
+                      gradientColors: const [Color(0xFF1D4ED8), Color(0xFF1E40AF)],
                       onTap: () => Navigator.push(
                           context,
                           MaterialPageRoute(
-                              builder: (_) => const EstadisticasPage())),
+                              builder: (_) => const InventarioModuloPage())),
                     ),
-                    const SizedBox(width: 12),
-                    _QuickAction(
-                      icon: Icons.assignment_return_rounded,
-                      label: 'Devolver',
-                      color: kGreen,
-                      onTap: () => Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                              builder: (_) => const PendientesPage())),
-                    ),
-                    const SizedBox(width: 12),
-                    _QuickAction(
-                      icon: Icons.picture_as_pdf_rounded,
-                      label: 'Informes',
-                      color: kAmber,
-                      onTap: () => Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                              builder: (_) => const InformesPage())),
-                    ),
-                  ]),
+                  ),
                 ],
               ),
             ),
@@ -612,7 +589,8 @@ class _ModuloCard extends StatelessWidget {
         onTap: onTap,
         borderRadius: BorderRadius.circular(22),
         child: Container(
-          padding: const EdgeInsets.all(22),
+          width: double.infinity,
+          padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
             gradient: LinearGradient(
               colors: gradientColors,
@@ -623,8 +601,8 @@ class _ModuloCard extends StatelessWidget {
             boxShadow: [
               BoxShadow(
                 color: gradientColors[0].withOpacity(0.32),
-                blurRadius: 20,
-                offset: const Offset(0, 8),
+                blurRadius: 18,
+                offset: const Offset(0, 6),
               ),
             ],
           ),
@@ -635,25 +613,26 @@ class _ModuloCard extends StatelessWidget {
                 color: Colors.white.withOpacity(0.18),
                 borderRadius: BorderRadius.circular(16),
               ),
-              child: Icon(icon, color: Colors.white, size: 28),
+              child: Icon(icon, color: Colors.white, size: 30),
             ),
-            const SizedBox(width: 18),
+            const SizedBox(width: 16),
             Expanded(
               child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(titulo,
                       style: const TextStyle(
                           fontWeight: FontWeight.w700,
-                          fontSize: 16,
+                          fontSize: 16.5,
                           color: Colors.white,
                           letterSpacing: -0.3)),
-                  const SizedBox(height: 5),
+                  const SizedBox(height: 6),
                   Text(subtitulo,
                       style: TextStyle(
                           fontSize: 12.5,
-                          color: Colors.white.withOpacity(0.75),
-                          height: 1.4)),
+                          color: Colors.white.withOpacity(0.8),
+                          height: 1.3)),
                 ],
               ),
             ),
@@ -664,7 +643,7 @@ class _ModuloCard extends StatelessWidget {
                 shape: BoxShape.circle,
               ),
               child: const Icon(Icons.arrow_forward_rounded,
-                  color: Colors.white, size: 16),
+                  color: Colors.white, size: 18),
             ),
           ]),
         ),
@@ -673,64 +652,6 @@ class _ModuloCard extends StatelessWidget {
   }
 }
 
-class _QuickAction extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final Color color;
-  final VoidCallback onTap;
-
-  const _QuickAction({
-    required this.icon,
-    required this.label,
-    required this.color,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Expanded(
-      child: Material(
-        color: kSurface,
-        borderRadius: BorderRadius.circular(16),
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(16),
-          child: Container(
-            padding: const EdgeInsets.symmetric(vertical: 16),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: kBorder, width: 1),
-              boxShadow: kShadowSoft,
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: color.withOpacity(0.1),
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(icon, color: color, size: 22),
-                ),
-                const SizedBox(height: 8),
-                Text(label,
-                    style: const TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w600,
-                        color: kTextSub)),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-// ─────────────────────────────────────────────
-// CARD DE ACCESO GENÉRICA (módulos internos)
-// ─────────────────────────────────────────────
 class _AccesoCard extends StatelessWidget {
   final IconData icon;
   final String titulo;
@@ -957,8 +878,6 @@ class _RegistrarPageState extends State<RegistrarPage> {
       if (retResp.statusCode == 200 || retResp.statusCode == 201) {
         mostrarNotificacionApp('¡Préstamo Exitoso!',
             'Retiro de $_tipo para carnet $codigo');
-        await mostrarNotificacionLocal('Retiro Registrado',
-            'Préstamo de $_tipo para el carnet $codigo');
         _carnetCtrl.clear();
       } else {
         mostrarNotificacionApp('Error', 'Error al registrar el retiro',
@@ -985,8 +904,7 @@ class _RegistrarPageState extends State<RegistrarPage> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Cancelar',
-                style: TextStyle(color: kTextSub)),
+            child: const Text('Cancelar', style: TextStyle(color: kTextSub)),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
@@ -1018,7 +936,6 @@ class _RegistrarPageState extends State<RegistrarPage> {
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          // ── Card principal ───────────────────────
           Container(
             decoration: BoxDecoration(
               color: kSurface,
@@ -1052,8 +969,7 @@ class _RegistrarPageState extends State<RegistrarPage> {
                                 color: kTextMain)),
                         SizedBox(height: 2),
                         Text('Escanea o ingresa el carnet del alumno',
-                            style:
-                                TextStyle(fontSize: 12.5, color: kTextSub)),
+                            style: TextStyle(fontSize: 12.5, color: kTextSub)),
                       ],
                     ),
                   ),
@@ -1062,7 +978,6 @@ class _RegistrarPageState extends State<RegistrarPage> {
                 const Divider(color: kBorder, height: 1),
                 const SizedBox(height: 20),
 
-                // Toggle auto-guardado
                 _ToggleRow(
                   icon: _autoGuardado
                       ? Icons.bolt_rounded
@@ -1079,7 +994,6 @@ class _RegistrarPageState extends State<RegistrarPage> {
 
                 const SizedBox(height: 20),
 
-                // Campo carnet
                 TextField(
                   controller: _carnetCtrl,
                   decoration: InputDecoration(
@@ -1096,7 +1010,6 @@ class _RegistrarPageState extends State<RegistrarPage> {
 
                 const SizedBox(height: 16),
 
-                // Selector tipo utensilio
                 const Text('Tipo de utensilio',
                     style: TextStyle(
                         fontSize: 13,
@@ -1137,8 +1050,7 @@ class _RegistrarPageState extends State<RegistrarPage> {
                               const SizedBox(height: 6),
                               Text(t,
                                   style: TextStyle(
-                                      color:
-                                          sel ? Colors.white : kTextSub,
+                                      color: sel ? Colors.white : kTextSub,
                                       fontWeight: FontWeight.w600,
                                       fontSize: 12.5)),
                             ],
@@ -1186,9 +1098,6 @@ class _RegistrarPageState extends State<RegistrarPage> {
   }
 }
 
-// ─────────────────────────────────────────────
-// TOGGLE ROW (componente reutilizable)
-// ─────────────────────────────────────────────
 class _ToggleRow extends StatelessWidget {
   final IconData icon;
   final Color iconColor;
@@ -1277,13 +1186,11 @@ class _EstadisticasPageState extends State<EstadisticasPage> {
   Future<void> _obtenerEstadisticasHoy() async {
     setState(() => _cargando = true);
     try {
-      final response =
-          await http.get(Uri.parse('$kBaseUrl/informe'));
+      final response = await http.get(Uri.parse('$kBaseUrl/informe'));
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         setState(() {
-          _informe =
-              data is List ? data : (data['informe'] ?? []);
+          _informe = data is List ? data : (data['informe'] ?? []);
           _fechaHoy = data['fecha'] ??
               DateTime.now().toString().split(' ')[0];
         });
@@ -1304,8 +1211,7 @@ class _EstadisticasPageState extends State<EstadisticasPage> {
       final isTouched = i == _touchedIndex;
       final item = _informe[i];
       final tipo = item['tipo'] ?? 'Utensilio';
-      final val =
-          double.tryParse(item['entregados'].toString()) ?? 0.0;
+      final val = double.tryParse(item['entregados'].toString()) ?? 0.0;
       final pct = total > 0 ? val / total * 100 : 0.0;
       final color = _colorTipo[tipo] ?? const Color(0xFF10B981);
 
@@ -1343,7 +1249,6 @@ class _EstadisticasPageState extends State<EstadisticasPage> {
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
         child: Column(children: [
-          // Fecha chip
           if (_fechaHoy.isNotEmpty)
             Align(
               alignment: Alignment.centerLeft,
@@ -1370,7 +1275,6 @@ class _EstadisticasPageState extends State<EstadisticasPage> {
               ),
             ),
 
-          // Gráfico pastel
           Container(
             decoration: BoxDecoration(
               color: kSurface,
@@ -1391,16 +1295,14 @@ class _EstadisticasPageState extends State<EstadisticasPage> {
                 height: 230,
                 child: _cargando
                     ? const Center(
-                        child:
-                            CircularProgressIndicator(color: kPrimary))
+                        child: CircularProgressIndicator(color: kPrimary))
                     : _informe.isEmpty
                         ? Center(
                             child: Column(
                               mainAxisSize: MainAxisSize.min,
                               children: [
                                 Icon(Icons.donut_large_rounded,
-                                    size: 48,
-                                    color: kBorder),
+                                    size: 48, color: kBorder),
                                 const SizedBox(height: 12),
                                 const Text('Sin registros para hoy',
                                     style: TextStyle(
@@ -1411,11 +1313,9 @@ class _EstadisticasPageState extends State<EstadisticasPage> {
                         : Stack(children: [
                             PieChart(PieChartData(
                               pieTouchData: PieTouchData(
-                                touchCallback:
-                                    (FlTouchEvent event, resp) {
+                                touchCallback: (FlTouchEvent event, resp) {
                                   setState(() {
-                                    if (!event
-                                            .isInterestedForInteractions ||
+                                    if (!event.isInterestedForInteractions ||
                                         resp == null ||
                                         resp.touchedSection == null) {
                                       _touchedIndex = -1;
@@ -1444,15 +1344,13 @@ class _EstadisticasPageState extends State<EstadisticasPage> {
                                       style: TextStyle(
                                           fontSize: 12,
                                           color: kTextSub,
-                                          fontWeight:
-                                              FontWeight.w500)),
+                                          fontWeight: FontWeight.w500)),
                                 ],
                               ),
                             ),
                           ]),
               ),
               const SizedBox(height: 18),
-              // Leyenda
               Container(
                 padding: const EdgeInsets.symmetric(
                     horizontal: 16, vertical: 12),
@@ -1477,8 +1375,7 @@ class _EstadisticasPageState extends State<EstadisticasPage> {
           _sectionTitle('Detalle por Utensilio'),
 
           if (_cargando)
-            const Center(
-                child: CircularProgressIndicator(color: kPrimary))
+            const Center(child: CircularProgressIndicator(color: kPrimary))
           else if (_informe.isEmpty)
             Container(
               padding: const EdgeInsets.all(24),
@@ -1577,11 +1474,8 @@ class _Stat extends StatelessWidget {
       children: [
         Text(value,
             style: TextStyle(
-                fontWeight: FontWeight.w800,
-                fontSize: 15,
-                color: color)),
-        Text(label,
-            style: const TextStyle(fontSize: 10.5, color: kTextSub)),
+                fontWeight: FontWeight.w800, fontSize: 15, color: color)),
+        Text(label, style: const TextStyle(fontSize: 10.5, color: kTextSub)),
       ],
     );
   }
@@ -1598,14 +1492,11 @@ class _ItemLeyenda extends StatelessWidget {
       Container(
           width: 10,
           height: 10,
-          decoration:
-              BoxDecoration(color: color, shape: BoxShape.circle)),
+          decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
       const SizedBox(width: 7),
       Text(texto,
           style: const TextStyle(
-              fontSize: 12.5,
-              fontWeight: FontWeight.w600,
-              color: kTextMain)),
+              fontSize: 12.5, fontWeight: FontWeight.w600, color: kTextMain)),
     ]);
   }
 }
@@ -1673,8 +1564,7 @@ class _PendientesPageState extends State<PendientesPage> {
           await http.get(Uri.parse('$kBaseUrl/pendientes/$carnet'));
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        final lista =
-            data is List ? data : (data['pendientes'] ?? []);
+        final lista = data is List ? data : (data['pendientes'] ?? []);
         final hoy = DateTime.now().toString().split(' ')[0];
         setState(() {
           pendientes = lista
@@ -1728,9 +1618,9 @@ class _PendientesPageState extends State<PendientesPage> {
       }
       final aDevolver = hoyList.where((e) {
         final t = (e['tipo'] ?? '').toString().toLowerCase();
-        return _modosSeleccionados
-            .any((m) => m.toLowerCase() == t);
+        return _modosSeleccionados.any((m) => m.toLowerCase() == t);
       }).toList();
+
       if (aDevolver.isEmpty) {
         mostrarNotificacionApp(
             'Aviso', 'Sin pendientes de los tipos seleccionados',
@@ -1738,6 +1628,7 @@ class _PendientesPageState extends State<PendientesPage> {
         setState(() => pendientes = hoyList);
         return;
       }
+
       int ok = 0;
       for (final item in aDevolver) {
         final id = item['id'];
@@ -1750,8 +1641,6 @@ class _PendientesPageState extends State<PendientesPage> {
       if (ok > 0) {
         mostrarNotificacionApp(
             '¡Devolución Exitosa!', 'Se devolvieron $ok utensilio(s).');
-        await mostrarNotificacionLocal('Devolución Automática',
-            '${_modosSeleccionados.join(", ")} — carnet $carnet');
       }
       _consultarPendientesManual();
     } catch (_) {
@@ -1770,7 +1659,6 @@ class _PendientesPageState extends State<PendientesPage> {
       body: Padding(
         padding: const EdgeInsets.all(20),
         child: Column(children: [
-          // Selector tipo
           _sectionTitle('1. Tipo(s) a devolver'),
           Row(
             children: _tiposDisponibles.map((tipo) {
@@ -1780,8 +1668,9 @@ class _PendientesPageState extends State<PendientesPage> {
                 child: GestureDetector(
                   onTap: () => setState(() {
                     if (sel) {
-                      if (_modosSeleccionados.length > 1)
+                      if (_modosSeleccionados.length > 1) {
                         _modosSeleccionados.remove(tipo);
+                      }
                     } else {
                       _modosSeleccionados.add(tipo);
                     }
@@ -1960,22 +1849,19 @@ class _PendientesPageState extends State<PendientesPage> {
                             itemBuilder: (_, i) {
                               final item = pendientes[i];
                               final tipo = item['tipo'] ?? 'Utensilio';
-                              final fecha =
-                                  item['fecha_retiro'] ?? '';
+                              final fecha = item['fecha_retiro'] ?? '';
                               final esModo = _modosSeleccionados.any(
                                   (m) =>
                                       m.toLowerCase() ==
                                       tipo.toLowerCase());
-                              final col =
-                                  _colorTipo[tipo] ?? kBlue;
+                              final col = _colorTipo[tipo] ?? kBlue;
 
                               return Container(
                                 decoration: BoxDecoration(
                                   color: esModo
                                       ? kPrimary.withOpacity(0.04)
                                       : kSurface,
-                                  borderRadius:
-                                      BorderRadius.circular(16),
+                                  borderRadius: BorderRadius.circular(16),
                                   border: Border.all(
                                       color: esModo
                                           ? kPrimary.withOpacity(0.2)
@@ -2051,8 +1937,7 @@ class _RegistrarEstudiantePageState
   @override
   void initState() {
     super.initState();
-    _codigoCtrl =
-        TextEditingController(text: widget.codigoInicial);
+    _codigoCtrl = TextEditingController(text: widget.codigoInicial);
     _carnetCtrl.text = widget.codigoInicial;
   }
 
@@ -2162,8 +2047,7 @@ class _RegistrarEstudiantePageState
                     shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(14)),
                   ),
-                  onPressed:
-                      _guardando ? null : _guardarEstudiante,
+                  onPressed: _guardando ? null : _guardarEstudiante,
                   icon: _guardando
                       ? const SizedBox(
                           width: 20,
@@ -2244,8 +2128,7 @@ class _InformesPageState extends State<InformesPage> {
     );
     if (picked != null) {
       setState(() {
-        _fechaController.text =
-            picked.toIso8601String().split('T')[0];
+        _fechaController.text = picked.toIso8601String().split('T')[0];
       });
       _obtenerInformeHistorico();
     }
@@ -2261,8 +2144,7 @@ class _InformesPageState extends State<InformesPage> {
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         setState(() {
-          _informe =
-              data is List ? data : (data['informe'] ?? []);
+          _informe = data is List ? data : (data['informe'] ?? []);
         });
       } else {
         setState(() => _informe = []);
@@ -2285,8 +2167,7 @@ class _InformesPageState extends State<InformesPage> {
           children: [
             pw.Text('Informe Diario — Cocina Escolar INFRAMEN',
                 style: pw.TextStyle(
-                    fontSize: 20,
-                    fontWeight: pw.FontWeight.bold)),
+                    fontSize: 20, fontWeight: pw.FontWeight.bold)),
             pw.SizedBox(height: 6),
             pw.Text('Fecha del reporte: $fecha',
                 style: const pw.TextStyle(fontSize: 12)),
@@ -2337,8 +2218,7 @@ class _InformesPageState extends State<InformesPage> {
           excel_pkg.IntCellValue(
               int.tryParse((item['devueltos'] ?? 0).toString()) ?? 0),
           excel_pkg.IntCellValue(
-              int.tryParse((item['pendientes'] ?? 0).toString()) ??
-                  0),
+              int.tryParse((item['pendientes'] ?? 0).toString()) ?? 0),
         ]);
       }
       final bytes = ex.save();
@@ -2366,7 +2246,6 @@ class _InformesPageState extends State<InformesPage> {
       body: Padding(
         padding: const EdgeInsets.all(20),
         child: Column(children: [
-          // ── Selector fecha ───────────────────────
           Container(
             decoration: BoxDecoration(
               color: kSurface,
@@ -2388,8 +2267,7 @@ class _InformesPageState extends State<InformesPage> {
                   controller: _fechaController,
                   decoration: InputDecoration(
                     labelText: 'Fecha (YYYY-MM-DD)',
-                    prefixIcon:
-                        const Icon(Icons.calendar_today_outlined),
+                    prefixIcon: const Icon(Icons.calendar_today_outlined),
                     suffixIcon: IconButton(
                       icon: const Icon(Icons.event_note_rounded,
                           color: kPrimary),
@@ -2407,8 +2285,7 @@ class _InformesPageState extends State<InformesPage> {
                       shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12)),
                     ),
-                    onPressed:
-                        _cargando ? null : _obtenerInformeHistorico,
+                    onPressed: _cargando ? null : _obtenerInformeHistorico,
                     icon: _cargando
                         ? const SizedBox(
                             width: 18,
@@ -2418,8 +2295,7 @@ class _InformesPageState extends State<InformesPage> {
                         : const Icon(Icons.search_rounded),
                     label: Text(
                         _cargando ? 'Buscando...' : 'Obtener Informe',
-                        style: const TextStyle(
-                            fontWeight: FontWeight.w700)),
+                        style: const TextStyle(fontWeight: FontWeight.w700)),
                   ),
                 ),
               ],
@@ -2428,7 +2304,6 @@ class _InformesPageState extends State<InformesPage> {
 
           const SizedBox(height: 14),
 
-          // ── Botones export ───────────────────────
           Row(children: [
             Expanded(
               child: ElevatedButton.icon(
@@ -2497,16 +2372,13 @@ class _InformesPageState extends State<InformesPage> {
                           final tipo = item['tipo'] ?? 'Utensilio';
                           final entregados = item['entregados'] ?? 0;
                           final devueltos = item['devueltos'] ?? 0;
-                          final pendientes =
-                              item['pendientes'] ?? 0;
-                          final col =
-                              _colorTipo[tipo] ?? kBlue;
+                          final pendientes = item['pendientes'] ?? 0;
+                          final col = _colorTipo[tipo] ?? kBlue;
 
                           return Container(
                             decoration: BoxDecoration(
                               color: kSurface,
-                              borderRadius:
-                                  BorderRadius.circular(16),
+                              borderRadius: BorderRadius.circular(16),
                               border: Border.all(color: kBorder),
                               boxShadow: kShadowSoft,
                             ),
@@ -2517,12 +2389,10 @@ class _InformesPageState extends State<InformesPage> {
                                 height: 48,
                                 decoration: BoxDecoration(
                                   color: col.withOpacity(0.1),
-                                  borderRadius:
-                                      BorderRadius.circular(14),
+                                  borderRadius: BorderRadius.circular(14),
                                 ),
                                 child: Icon(
-                                    _iconoTipo[tipo] ??
-                                        Icons.history,
+                                    _iconoTipo[tipo] ?? Icons.history,
                                     color: col,
                                     size: 24),
                               ),
@@ -2535,8 +2405,7 @@ class _InformesPageState extends State<InformesPage> {
                                         color: kTextMain)),
                               ),
                               Column(
-                                  crossAxisAlignment:
-                                      CrossAxisAlignment.end,
+                                  crossAxisAlignment: CrossAxisAlignment.end,
                                   children: [
                                     _Stat(
                                         label: 'Entregados',
@@ -2565,7 +2434,7 @@ class _InformesPageState extends State<InformesPage> {
 }
 
 // ─────────────────────────────────────────────
-// PANTALLA: ESCÁNER QR / CÓDIGO DE BARRAS
+// ESCÁNER DE CÓDIGOS DE BARRAS / QR
 // ─────────────────────────────────────────────
 class EscaneoPage extends StatefulWidget {
   final ValueChanged<String> onCodigoEscaneado;
@@ -2618,34 +2487,15 @@ class _EscaneoPageState extends State<EscaneoPage>
         backgroundColor: kPrimaryDeep,
         foregroundColor: Colors.white,
         centerTitle: true,
-        flexibleSpace: Container(
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              colors: [kPrimaryDeep, Color(0xFF1E293B)],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-          ),
-        ),
       ),
       body: Stack(
         children: [
           MobileScanner(onDetect: _onDetect),
-
-          // Overlay oscuro en esquinas
-          ColorFiltered(
-            colorFilter: const ColorFilter.mode(
-                Colors.transparent, BlendMode.multiply),
-            child: Container(),
-          ),
-
-          // Marco de escaneo
           Center(
             child: SizedBox(
               width: 260,
               height: 200,
               child: Stack(children: [
-                // Línea de escaneo animada
                 AnimatedBuilder(
                   animation: _pulse,
                   builder: (_, __) => Positioned(
@@ -2666,28 +2516,14 @@ class _EscaneoPageState extends State<EscaneoPage>
                     ),
                   ),
                 ),
-                // Esquinas del marco
+                Positioned(top: 0, left: 0, child: _esquinaMarco()),
+                Positioned(top: 0, right: 0, child: _esquinaMarco(rotar: 90)),
+                Positioned(bottom: 0, left: 0, child: _esquinaMarco(rotar: 270)),
                 Positioned(
-                    top: 0,
-                    left: 0,
-                    child: _esquinaMarco()),
-                Positioned(
-                    top: 0,
-                    right: 0,
-                    child: _esquinaMarco(rotar: 90)),
-                Positioned(
-                    bottom: 0,
-                    left: 0,
-                    child: _esquinaMarco(rotar: 270)),
-                Positioned(
-                    bottom: 0,
-                    right: 0,
-                    child: _esquinaMarco(rotar: 180)),
+                    bottom: 0, right: 0, child: _esquinaMarco(rotar: 180)),
               ]),
             ),
           ),
-
-          // Texto guía
           Positioned(
             bottom: 80,
             left: 0,
@@ -2707,8 +2543,6 @@ class _EscaneoPageState extends State<EscaneoPage>
               ),
             ),
           ),
-
-          // Confirmación de escaneo
           if (_scanned)
             Container(
               color: Colors.black60,
